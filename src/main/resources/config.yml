@@ -1,0 +1,52 @@
+region:
+  xlow: -100
+  xhigh: 100
+  ylow: 0
+  yhigh: 256
+  zlow: -100
+  zhigh: 100
+
+teams:
+  red:
+    spawn:
+      x: 0
+      y: 0
+      z: 0
+      pitch: 0
+      yaw: 0
+    generator:
+      x: 0
+      y: 0
+      z: 0
+    bed:
+      x: 0
+      y: 0
+      z: 0
+  green:
+    spawn:
+      x: 0
+      y: 0
+      z: 0
+      pitch: 0
+      yaw: 0
+    generator:
+      x: 0
+      y: 0
+      z: 0
+    bed:
+      x: 0
+      y: 0
+      z: 0
+
+generators:
+  emerald1:
+    item: "emerald"
+    x: 0
+    y: 64
+    z: 0
+  diamond1:
+    item: "diamond"
+    x: 0
+    y: 64
+    z: 0
+
