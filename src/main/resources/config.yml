@@ -20,6 +20,11 @@ playregion:
     y: 256
     z: 100
 
+spectatespawn:
+  x: 0
+  y: 0
+  z: 0
+
 maxplayersperteam: 4
 
 teams:
@@ -38,6 +43,14 @@ teams:
       x: 0
       y: 0
       z: 0
+    shop:
+      x: 0
+      y: 0
+      z: 0
+    teamshop:
+      x: 0
+      y: 0
+      z: 0
   green:
     spawn:
       x: 0
@@ -50,6 +63,14 @@ teams:
       y: 0
       z: 0
     bed:
+      x: 0
+      y: 0
+      z: 0
+    shop:
+      x: 0
+      y: 0
+      z: 0
+    teamshop:
       x: 0
       y: 0
       z: 0

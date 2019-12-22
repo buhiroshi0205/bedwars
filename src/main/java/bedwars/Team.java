@@ -25,8 +25,4 @@ class Team {
     this.maxplayers = maxplayers;
   }
 
-  public void addPlayer(Player p) {
-    players.add(p);
-  }
-
 }
