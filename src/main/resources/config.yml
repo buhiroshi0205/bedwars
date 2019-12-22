@@ -25,6 +25,11 @@ spectatespawn:
   y: 0
   z: 0
 
+lobby:
+  x: 0
+  y: 0
+  z: 0
+
 maxplayersperteam: 4
 
 teams:

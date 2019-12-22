@@ -15,6 +15,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.Location;
 import org.bukkit.Color;
 import org.bukkit.ChatColor;
@@ -31,31 +32,30 @@ public final class Main extends JavaPlugin {
 	FileConfiguration config;
 	ArrayList<Team> teams;
 	ArrayList<ResourceSpawner> resourcegens;
-	Location playloclow, playlochigh, structureloclow, structurelochigh, spectatespawn;
+	Location playloclow, playlochigh, structureloclow, structurelochigh, spectatespawn, lobby;
 
 
 	/* COMMAND LISTENER */
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		if (gamephase == 1) {
-			switch (label.toLowerCase()) {
-				case "joingame":
-					if (!(sender instanceof Player)) return false;
-					for (Team team : teams) {
-						if (team.name.equals(args[0])) {
-							if (team.players.size() >= team.maxplayers) {
-								sender.sendMessage(ChatColor.RED + "This team is full!");
-							} else {
-								team.players.add((Player) sender);
-							}
-							break;
+		if (gamephase == 0) {
+			if (label.equalsIgnoreCase("initgame")) {
+				if (!(sender instanceof Player)) return false;
+				for (Team team : teams) {
+					if (team.name.equals(args[0])) {
+						if (team.players.size() >= team.maxplayers) {
+							sender.sendMessage(ChatColor.RED + "This team is full!");
+						} else {
+							team.players.add((Player) sender);
 						}
+						break;
 					}
-					break;
-				case "startgame":
-					startGame();
-					break;
+				}
+			}
+		} else if (gamephase == 1) {
+			if (label.equalsIgnoreCase("startgame")) {
+				startGame();
 			}
 		}
 
@@ -76,19 +76,19 @@ public final class Main extends JavaPlugin {
 		resourcegens = new ArrayList<ResourceSpawner>();
 
 		String warworld = config.getString("region.world");
-		playloclow = getLocFromConfig(config, warworld, "playregion.low");
-		playlochigh = getLocFromConfig(config, warworld, "playregion.high");
-		structureloclow = getLocFromConfig(config, warworld, "structureregion.low");
-		structurelochigh = getLocFromConfig(config, warworld, "structureregion.high");
-		spectatespawn = getLocFromConfig(config, warworld, "spectatespawn");
+		playloclow = getLocFromConfig(config, warworld, "playregion.low", false);
+		playlochigh = getLocFromConfig(config, warworld, "playregion.high", false);
+		structureloclow = getLocFromConfig(config, warworld, "structureregion.low", false);
+		structurelochigh = getLocFromConfig(config, warworld, "structureregion.high", false);
+		spectatespawn = getLocFromConfig(config, warworld, "spectatespawn", false);
+		lobby = getLocFromConfig(config, warworld, "lobby", false);
 
 		ConfigurationSection allteamconfigs = config.getConfigurationSection("teams");
 		for (String teamname : allteamconfigs.getKeys(false)) {
 			ConfigurationSection teamconfig = allteamconfigs.getConfigurationSection(teamname);
-			// do something with color
-			Location spawn = getLocFromConfig(teamconfig, warworld, "spawn");
-			Location gen = getLocFromConfig(teamconfig, warworld, "generator");
-			Location bed = getLocFromConfig(teamconfig, warworld, "bed");
+			Location spawn = getLocFromConfig(teamconfig, warworld, "spawn", true);
+			Location gen = getLocFromConfig(teamconfig, warworld, "generator", false);
+			Location bed = getLocFromConfig(teamconfig, warworld, "bed", false);
 			Team newteam = new Team(teamname, Color.AQUA, spawn, gen, bed, config.getInt("maxplayersperteam"));
 			teams.add(newteam);
 		}
@@ -99,6 +99,7 @@ public final class Main extends JavaPlugin {
 	private void startGame() {
 		//clone world
 		for (Team team : teams) {
+			team.playersalive = team.players.size();
 			for (Player p : team.players) {
 				p.teleport(team.spawn);
 			}
@@ -114,6 +115,12 @@ public final class Main extends JavaPlugin {
 	private void endGame() {
 		for (ResourceSpawner rs : resourcegens) {
 			rs.cancel();
+		}
+		for (Team team : teams) {
+			for (Player p : team.players) {
+				p.setGameMode(GameMode.SURVIVAL);
+				p.teleport(lobby);
+			}
 		}
 
 		gamephase = 0;
@@ -173,21 +180,57 @@ public final class Main extends JavaPlugin {
 		e.setRespawnLocation(spectatespawn);
 		final Player p = e.getPlayer();
 		p.setGameMode(GameMode.SPECTATOR);
-		new BukkitRunnable() {
-			@Override
-			public void run() {
-				p.setGameMode(GameMode.SURVIVAL);
+		Team team = getTeam(p);
+		if (team.hasbed) {
+			new BukkitRunnable() {
+				@Override
+				public void run() {
+					p.setGameMode(GameMode.SURVIVAL);
+				}
+			}.runTaskLater(this, 100);
+		} else {
+			team.playersalive--;
+			int numaliveteams = 0;
+			Team aliveteam = teams.get(0);
+			for (Team t : teams) {
+				if (team.playersalive > 0) {
+					aliveteam = t;
+					numaliveteams++;
+				}
 			}
-		}.runTaskLater(this, 100);
+			if (numaliveteams == 0) {
+				getServer().broadcastMessage(ChatColor.YELLOW + aliveteam.name + " team wins!!!");
+				new BukkitRunnable() {
+					@Override
+					public void run() {
+						endGame();
+					}
+				}.runTaskLater(this, 200);
+			}
+		}
+		ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
+		((LeatherArmorMeta)helmet.getItemMeta()).setColor(team.color);
+		p.getInventory().setHelmet(helmet);
 	}
+
 
 	/* HELPER FUNCTIONS */
 
-	Location getLocFromConfig(ConfigurationSection configsec, String world, String base) {
-		return new Location(Bukkit.getWorld(world),
-												configsec.getInt(base + ".x"),
-												configsec.getInt(base + ".y"),
-												configsec.getInt(base + ".z"));
+	Location getLocFromConfig(ConfigurationSection configsec, String world, String base, boolean pitchyaw) {
+		if (pitchyaw) {
+			return new Location(Bukkit.getWorld(world),
+													configsec.getInt(base + ".x"),
+													configsec.getInt(base + ".y"),
+													configsec.getInt(base + ".z"),
+													configsec.getInt(base + ".yaw"),
+													configsec.getInt(base + ".pitch"));
+		} else {
+			return new Location(Bukkit.getWorld(world),
+													configsec.getInt(base + ".x"),
+													configsec.getInt(base + ".y"),
+													configsec.getInt(base + ".z"));
+		}
+
 	}
 
 	Team getTeam(Player player) {

@@ -11,6 +11,7 @@ class Team {
   Color color;
   Location spawn, generator, bed;
   int maxplayers;
+  int playersalive;
 
   ArrayList<Player> players = new ArrayList<Player>();
   boolean hasbed = true;
