@@ -19,12 +19,16 @@ import java.util.ArrayList;
 
 public final class Main extends JavaPlugin {
 
+	/* GLOBAL VARIABLES */
+
 	int gamephase = 0; // 0 = none, 1 = lobby, 2 = ingame
 	FileConfiguration config;
 	ArrayList<Team> teams;
-	ArrayList<ResourceSpawner> resourcegens = new ArrayList<ResourceSpawner>();
+	ArrayList<ResourceSpawner> resourcegens;
+	Location playloclow, playlochigh, structureloclow, structurelochigh;
 
-	Location loclow, lochigh;
+
+	/* COMMAND LISTENER */
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -52,6 +56,9 @@ public final class Main extends JavaPlugin {
 		return true;
   }
 
+
+  /* GAME MANAGER */
+
 	@Override
 	public void onEnable() {
 		saveDefaultConfig();
@@ -59,12 +66,14 @@ public final class Main extends JavaPlugin {
 	}
 
 	private void initGame() {
-		gamephase = 1;
 		teams = new ArrayList<Team>();
+		resourcegens = new ArrayList<ResourceSpawner>();
 
 		String warworld = config.getString("region.world");
-		loclow = getLocFromConfig(config, warworld, "region.low");
-		lochigh = getLocFromConfig(config, warworld, "region.high");
+		playloclow = getLocFromConfig(config, warworld, "playregion.low");
+		playlochigh = getLocFromConfig(config, warworld, "playregion.high");
+		structureloclow = getLocFromConfig(config, warworld, "structureregion.low");
+		structurelochigh = getLocFromConfig(config, warworld, "structureregion.high");
 
 		ConfigurationSection allteamconfigs = config.getConfigurationSection("teams");
 		for (String teamname : allteamconfigs.getKeys(false)) {
@@ -76,6 +85,8 @@ public final class Main extends JavaPlugin {
 			Team newteam = new Team(teamname, Color.AQUA, spawn, gen, bed, config.getInt("maxplayersperteam"));
 			teams.add(newteam);
 		}
+
+		gamephase = 1;
 	}
 
 	private void startGame() {
@@ -90,14 +101,15 @@ public final class Main extends JavaPlugin {
 			spawner.runTaskTimer(this, 10, 10);
 		}
 
-		gamephase = 1;
+		gamephase = 2;
 	}
 
 	private void endGame() {
 		for (ResourceSpawner rs : resourcegens) {
 			rs.cancel();
 		}
-		resourcegens = new ArrayList<ResourceSpawner>();
+
+		gamephase = 0;
 	}
 
 	@EventHandler
@@ -111,6 +123,29 @@ public final class Main extends JavaPlugin {
 			}
 		}
 	}
+
+
+
+	/* IN-GAME EVENT LISTENERS */
+
+	@EventHandler
+	public void onBlockBreak(BlockBreakEvent e) {
+		Material blocktype = e.getBlock().getType();
+		if (blocktype == Material.RED_BED) {
+			for (Team team : teams) {
+				if (e.getBlock().getLocation().distance(team.bed) < 3) {
+					team.hasbed = false;
+					for (Player p : team.players) {
+						p.sendTitle(ChatColor.RED + "BED DESTROYED", "");
+					}
+				}
+			}
+		} else {
+		}
+	}
+
+
+	/* HELPER FUNCTIONS */
 
 	Location getLocFromConfig(ConfigurationSection configsec, String world, String base) {
 		return new Location(Bukkit.getWorld(world),
