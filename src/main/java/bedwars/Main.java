@@ -41,20 +41,23 @@ public final class Main extends JavaPlugin {
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if (gamephase == 0) {
 			if (label.equalsIgnoreCase("initgame")) {
+				initGame();
+			}
+		} else if (gamephase == 1) {
+			if (label.equalsIgnoreCase("joingame")) {
 				if (!(sender instanceof Player)) return false;
+				Player p = (Player) sender;
+				Team prevteam = getTeam(p);
 				for (Team team : teams) {
 					if (team.name.equals(args[0])) {
-						if (team.players.size() >= team.maxplayers) {
-							sender.sendMessage(ChatColor.RED + "This team is full!");
-						} else {
-							team.players.add((Player) sender);
+						if (prevteam != null) {
+							prevteam.removePlayer(p);
 						}
+						team.addPlayer(p);
 						break;
 					}
 				}
-			}
-		} else if (gamephase == 1) {
-			if (label.equalsIgnoreCase("startgame")) {
+			} else if (label.equalsIgnoreCase("startgame")) {
 				startGame();
 			}
 		}
@@ -75,22 +78,17 @@ public final class Main extends JavaPlugin {
 		teams = new ArrayList<Team>();
 		resourcegens = new ArrayList<ResourceSpawner>();
 
-		String warworld = config.getString("region.world");
-		playloclow = getLocFromConfig(config, warworld, "playregion.low", false);
-		playlochigh = getLocFromConfig(config, warworld, "playregion.high", false);
-		structureloclow = getLocFromConfig(config, warworld, "structureregion.low", false);
-		structurelochigh = getLocFromConfig(config, warworld, "structureregion.high", false);
-		spectatespawn = getLocFromConfig(config, warworld, "spectatespawn", false);
-		lobby = getLocFromConfig(config, warworld, "lobby", false);
+		playloclow = getLocFromConfig(config, "playregion.low", false);
+		playlochigh = getLocFromConfig(config, "playregion.high", false);
+		structureloclow = getLocFromConfig(config, "structureregion.low", false);
+		structurelochigh = getLocFromConfig(config, "structureregion.high", false);
+		spectatespawn = getLocFromConfig(config, "spectatespawn", false);
+		lobby = getLocFromConfig(config, "lobby", false);
 
 		ConfigurationSection allteamconfigs = config.getConfigurationSection("teams");
-		for (String teamname : allteamconfigs.getKeys(false)) {
-			ConfigurationSection teamconfig = allteamconfigs.getConfigurationSection(teamname);
-			Location spawn = getLocFromConfig(teamconfig, warworld, "spawn", true);
-			Location gen = getLocFromConfig(teamconfig, warworld, "generator", false);
-			Location bed = getLocFromConfig(teamconfig, warworld, "bed", false);
-			Team newteam = new Team(teamname, Color.AQUA, spawn, gen, bed, config.getInt("maxplayersperteam"));
-			teams.add(newteam);
+		for (String teamid : allteamconfigs.getKeys(false)) {
+			ConfigurationSection teamconfig = allteamconfigs.getConfigurationSection(teamid);
+			teams.add(new Team(teamconfig));
 		}
 
 		gamephase = 1;
@@ -151,7 +149,7 @@ public final class Main extends JavaPlugin {
 				if (loc.distance(team.bed) < 3) {
 					team.hasbed = false;
 					for (Player p : team.players) {
-						p.sendTitle(ChatColor.RED + "BED DESTROYED", "");
+						p.sendTitle(ChatColor.DARK_RED + "BED DESTROYED", "");
 					}
 				}
 			}
@@ -199,7 +197,7 @@ public final class Main extends JavaPlugin {
 				}
 			}
 			if (numaliveteams == 0) {
-				getServer().broadcastMessage(ChatColor.YELLOW + aliveteam.name + " team wins!!!");
+				getServer().broadcastMessage("        " + aliveteam.chatcolor + aliveteam.name + ChatColor.YELLOW + " team wins!!!");
 				new BukkitRunnable() {
 					@Override
 					public void run() {
@@ -216,16 +214,16 @@ public final class Main extends JavaPlugin {
 
 	/* HELPER FUNCTIONS */
 
-	Location getLocFromConfig(ConfigurationSection configsec, String world, String base, boolean pitchyaw) {
+	static Location getLocFromConfig(ConfigurationSection configsec, String base, boolean pitchyaw) {
 		if (pitchyaw) {
-			return new Location(Bukkit.getWorld(world),
+			return new Location(Bukkit.getWorld("world"),
 													configsec.getInt(base + ".x"),
 													configsec.getInt(base + ".y"),
 													configsec.getInt(base + ".z"),
 													configsec.getInt(base + ".yaw"),
 													configsec.getInt(base + ".pitch"));
 		} else {
-			return new Location(Bukkit.getWorld(world),
+			return new Location(Bukkit.getWorld("world"),
 													configsec.getInt(base + ".x"),
 													configsec.getInt(base + ".y"),
 													configsec.getInt(base + ".z"));

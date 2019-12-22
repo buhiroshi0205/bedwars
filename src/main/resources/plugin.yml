@@ -3,5 +3,7 @@ main: bedwars.Main
 version: 0.1-SNAPSHOT
 commands:
   jointeam:
+  initgame:
+    permission: bedwars.admin
   startgame:
     permission: bedwars.admin
