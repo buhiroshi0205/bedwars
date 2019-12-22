@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Material;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.*;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -24,7 +25,7 @@ import org.bukkit.GameMode;
 
 import java.util.ArrayList;
 
-public final class Main extends JavaPlugin {
+public final class Main extends JavaPlugin implements Listener {
 
 	/* GLOBAL VARIABLES */
 
@@ -44,16 +45,17 @@ public final class Main extends JavaPlugin {
 				initGame(sender);
 			}
 		} else if (gamephase == 1) {
-			if (label.equalsIgnoreCase("joingame")) {
+			if (label.equalsIgnoreCase("jointeam")) {
 				if (!(sender instanceof Player)) return false;
 				Player p = (Player) sender;
 				Team prevteam = getTeam(p);
 				for (Team team : teams) {
-					if (team.name.equals(args[0])) {
+					if (team.name.equalsIgnoreCase(args[0])) {
 						if (prevteam != null) {
 							prevteam.removePlayer(p);
 						}
 						team.addPlayer(p);
+						p.sendMessage("Joined team " + team.name);
 						break;
 					}
 				}
@@ -70,6 +72,7 @@ public final class Main extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
+		getServer().getPluginManager().registerEvents(this, this);
 		saveDefaultConfig();
 		config = getConfig();
 	}
@@ -106,6 +109,7 @@ public final class Main extends JavaPlugin {
 																								 (int)playloclow.getY(),
 																								 (int)playloclow.getZ()));
 
+		Bukkit.broadcastMessage("Game initialized!");
 		gamephase = 1;
 	}
 
@@ -121,6 +125,7 @@ public final class Main extends JavaPlugin {
 			spawner.runTaskTimer(this, 10, 10);
 		}
 
+		Bukkit.broadcastMessage("Game started!");
 		gamephase = 2;
 	}
 
@@ -135,6 +140,7 @@ public final class Main extends JavaPlugin {
 			}
 		}
 
+		Bukkit.broadcastMessage("Game ended!");
 		gamephase = 0;
 	}
 
@@ -158,7 +164,7 @@ public final class Main extends JavaPlugin {
 		if (gamephase != 2) return;
 		Material blocktype = e.getBlock().getType();
 		Location loc = e.getBlock().getLocation();
-		if (blocktype == Material.BED) {
+		if (blocktype == Material.BED_BLOCK) {
 			for (Team team : teams) {
 				if (loc.distance(team.bed) < 3) {
 					team.hasbed = false;
@@ -192,11 +198,12 @@ public final class Main extends JavaPlugin {
 		e.setRespawnLocation(spectatespawn);
 		final Player p = e.getPlayer();
 		p.setGameMode(GameMode.SPECTATOR);
-		Team team = getTeam(p);
+		final Team team = getTeam(p);
 		if (team.hasbed) {
 			new BukkitRunnable() {
 				@Override
 				public void run() {
+					p.teleport(team.spawn);
 					p.setGameMode(GameMode.SURVIVAL);
 				}
 			}.runTaskLater(this, 100);
