@@ -1,10 +1,26 @@
-region:
-  xlow: -100
-  xhigh: 100
-  ylow: 0
-  yhigh: 256
-  zlow: -100
-  zhigh: 100
+world: "world"
+
+structureregion:
+  low:
+    x: -100
+    y: 0
+    z: -100
+  high:
+    x: 100
+    y: 256
+    z: 100
+
+playregion:
+  low:
+    x: -100
+    y: 0
+    z: -100
+  high:
+    x: 100
+    y: 256
+    z: 100
+
+maxplayersperteam: 4
 
 teams:
   red:
