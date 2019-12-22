@@ -41,7 +41,7 @@ public final class Main extends JavaPlugin {
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if (gamephase == 0) {
 			if (label.equalsIgnoreCase("initgame")) {
-				initGame();
+				initGame(sender);
 			}
 		} else if (gamephase == 1) {
 			if (label.equalsIgnoreCase("joingame")) {
@@ -74,7 +74,7 @@ public final class Main extends JavaPlugin {
 		config = getConfig();
 	}
 
-	private void initGame() {
+	private void initGame(CommandSender sender) {
 		teams = new ArrayList<Team>();
 		resourcegens = new ArrayList<ResourceSpawner>();
 
@@ -91,11 +91,25 @@ public final class Main extends JavaPlugin {
 			teams.add(new Team(teamconfig));
 		}
 
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			p.teleport(lobby);
+		}
+
+		Bukkit.dispatchCommand(sender, String.format("clone %d %d %d %d %d %d %d %d %d",
+																								 (int)structureloclow.getX(),
+																								 (int)structureloclow.getY(),
+																								 (int)structureloclow.getZ(),
+																								 (int)structurelochigh.getX(),
+																								 (int)structurelochigh.getY(),
+																								 (int)structurelochigh.getZ(),
+																								 (int)playloclow.getX(),
+																								 (int)playloclow.getY(),
+																								 (int)playloclow.getZ()));
+
 		gamephase = 1;
 	}
 
 	private void startGame() {
-		//clone world
 		for (Team team : teams) {
 			team.playersalive = team.players.size();
 			for (Player p : team.players) {
