@@ -25,13 +25,14 @@ import org.bukkit.scoreboard.*;
 import org.bukkit.Location;
 import org.bukkit.Color;
 import org.bukkit.ChatColor;
-import org.bukkit.Sound;
 import org.bukkit.GameMode;
 
 
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Set;
+
+import static bedwars.Buy_menu_commandKt.getMasterCommand;
 
 public final class Main extends JavaPlugin implements Listener {
 
@@ -44,6 +45,8 @@ public final class Main extends JavaPlugin implements Listener {
 	ArrayList<ResourceSpawner> emeraldgens = new ArrayList<ResourceSpawner>();
 	Location playloclow, playlochigh, structureloclow, structurelochigh, spectatespawn, lobby;
 	Scoreboard sb;
+
+	public static Main INSTANCE;
 
 
 	/* COMMAND LISTENER */
@@ -87,6 +90,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@Override
 	public void onEnable() {
+		INSTANCE = this;
 		// initialize shit
 		getServer().getPluginManager().registerEvents(this, this);
 		saveDefaultConfig();
@@ -140,6 +144,9 @@ public final class Main extends JavaPlugin implements Listener {
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			p.setScoreboard(sb);
 		}
+
+		// configure commands
+        getCommand("buy").setExecutor(getMasterCommand());
 	}
 
 	private void startGame(CommandSender sender) {
