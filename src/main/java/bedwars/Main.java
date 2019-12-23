@@ -5,6 +5,8 @@ import org.bukkit.World;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.Material;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Listener;
@@ -18,8 +20,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
-import org.bukkit.scoreboard.Team;
-import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.*;
 import org.bukkit.Location;
 import org.bukkit.Color;
 import org.bukkit.ChatColor;
@@ -47,6 +48,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+		if (label.equalsIgnoreCase("update")) updateDisplay();
 		if (gamephase == 1) {
 
 			if (label.equalsIgnoreCase("setloc")) {
@@ -71,6 +73,7 @@ public final class Main extends JavaPlugin implements Listener {
 			} else if (label.equalsIgnoreCase("startgame")) {
 				if (!(sender instanceof Player)) return true;
 				startGame(sender);
+				updateDisplay();
 			}
 		}
 
@@ -97,9 +100,25 @@ public final class Main extends JavaPlugin implements Listener {
 			teaminfos.put(teamid, info);
 
 			Team newteam = sb.registerNewTeam(teamid);
-			newteam.setPrefix(info.chatcolor + "[" + info.name + "]");
+			newteam.setPrefix(info.chatcolor + "[" + info.name + "] ");
 			newteam.setCanSeeFriendlyInvisibles(true);
 			newteam.setAllowFriendlyFire(false);
+		}
+
+		// initialize player health/kills display
+		Objective health = sb.registerNewObjective("health", "health");
+		health.setDisplaySlot(DisplaySlot.BELOW_NAME);
+		health.setDisplayName(ChatColor.RED + "❤");
+		Objective kills = sb.registerNewObjective("kills", "playerKillCount");
+		kills.setDisplaySlot(DisplaySlot.PLAYER_LIST);
+
+		// initialize scoreboard display
+		Objective display = sb.registerNewObjective("display", "dummy");
+		display.setDisplaySlot(DisplaySlot.SIDEBAR);
+		display.setDisplayName("BED WARS");
+
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			p.setScoreboard(sb);
 		}
 	}
 
@@ -111,6 +130,8 @@ public final class Main extends JavaPlugin implements Listener {
 
 	private void startGame(CommandSender sender) {
 		if (gamephase != 1) return;
+
+		/*
 		Bukkit.dispatchCommand(sender, String.format("clone %d %d %d %d %d %d %d %d %d",
 																								 structureloclow.getBlockX(),
 																								 structureloclow.getBlockY(),
@@ -121,6 +142,8 @@ public final class Main extends JavaPlugin implements Listener {
 																								 playloclow.getBlockX(),
 																								 playloclow.getBlockY(),
 																								 playloclow.getBlockZ()));
+		*/
+		clone(structureloclow, structurelochigh, playloclow);
 
 		for (Team t : sb.getTeams()) {
 			// update team info for new game
@@ -168,6 +191,9 @@ public final class Main extends JavaPlugin implements Listener {
 				t.removePlayer(p);
 			}
 		}
+		for (Player p : Bukkit.getOnlinePlayers()) {
+			sb.resetScores((OfflinePlayer) p);
+		}
 
 		// teleport everyone to lobby
 		for (Player p : Bukkit.getOnlinePlayers()) {
@@ -176,7 +202,7 @@ public final class Main extends JavaPlugin implements Listener {
 		}
 
 		Bukkit.broadcastMessage("Game ended!");
-		gamephase = 0;
+		gamephase = 1;
 	}
 
 	@EventHandler
@@ -193,11 +219,13 @@ public final class Main extends JavaPlugin implements Listener {
 		} else if (gamephase == 2) {
 			getInfo(sb.getPlayerTeam(p)).playersalive--;
 		}
+		updateDisplay();
 	}
 
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent e) {
 		final Player p = e.getPlayer();
+		p.setScoreboard(sb);
 
 		// if in lobby phase, tp to lobby
 		if (gamephase == 1) {
@@ -249,6 +277,7 @@ public final class Main extends JavaPlugin implements Listener {
 					}
 				}
 			}
+			updateDisplay();
 
 		// only allow breaking player-placed blocks
 		} else {
@@ -284,19 +313,8 @@ public final class Main extends JavaPlugin implements Listener {
 				p.spigot().respawn();
 			}
 		}.runTaskLater(this, 1);
-	}
 
-	@EventHandler
-	public void onPlayerRespawn(PlayerRespawnEvent e) {
-		if (gamephase != 2) return;
-		final Player p = e.getPlayer();
-		final Team t = sb.getPlayerTeam(p); //assert not nul
-		assert t != null : " A non-player respawned???";
-		final TeamInfo info = getInfo(t);
-
-		// respawn as spectator first at least for 5 sec
-		e.setRespawnLocation(spectatespawn);
-		p.setGameMode(GameMode.SPECTATOR);
+		final TeamInfo info = getInfo(sb.getPlayerTeam(p));
 
 		// if team hasbed, put him back to warzone after 5 sec
 		if (info.hasbed) {
@@ -312,10 +330,11 @@ public final class Main extends JavaPlugin implements Listener {
 		} else {
 			// final kill!
 			info.playersalive--;
+			updateDisplay();
 
 			// test for game end condition
 			int numaliveteams = 0;
-			Team aliveteam = t;
+			Team aliveteam = null;
 			for (Team temp : sb.getTeams()) {
 				if (getInfo(temp).playersalive > 0) {
 					aliveteam = temp;
@@ -337,11 +356,31 @@ public final class Main extends JavaPlugin implements Listener {
 			}
 		}
 
-		/*
-		ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
-		((LeatherArmorMeta)helmet.getItemMeta()).setColor(team.color);
-		p.getInventory().setHelmet(helmet);
-		*/
+	}
+
+	@EventHandler
+	public void onPlayerRespawn(PlayerRespawnEvent e) {
+		if (gamephase == 1) {
+			e.getPlayer().teleport(lobby);
+			e.getPlayer().setGameMode(GameMode.ADVENTURE);
+		} else if (gamephase == 2) {
+			final Player p = e.getPlayer();
+			final Team t = sb.getPlayerTeam(p); //assert not nul
+			assert t != null : " A non-player respawned???";
+			final TeamInfo info = getInfo(t);
+
+			// respawn as spectator first at least for 5 sec
+			e.setRespawnLocation(spectatespawn);
+			p.setGameMode(GameMode.SPECTATOR);
+
+
+
+			/*
+			ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
+			((LeatherArmorMeta)helmet.getItemMeta()).setColor(team.color);
+			p.getInventory().setHelmet(helmet);
+			*/
+		}
 	}
 
 
@@ -351,6 +390,26 @@ public final class Main extends JavaPlugin implements Listener {
 		return teaminfos.get(t.getName());
 	}
 
+	private void updateDisplay() {
+		Objective display = sb.getObjective("display");
+		for (OfflinePlayer op : sb.getPlayers()) {
+			if (!(op.isOnline())) {
+				sb.resetScores(op);
+			}
+		}
+		display.getScore(".").setScore(1);
+		int i = 2;
+		for (TeamInfo info : teaminfos.values()) {
+			String base = info.chatcolor + info.name + ChatColor.RESET + ": ";
+			if (info.hasbed) {
+				display.getScore(base + "✓").setScore(i++);
+			} else {
+				display.getScore(base + String.valueOf(info.playersalive)).setScore(i++);
+			}
+		}
+		display.getScore(". ").setScore(i);
+	}
+
 	private void initializeLocations() {
 		playloclow = getLocation(config, "playregion.low");
 		playlochigh = getLocation(config, "playregion.high");
@@ -358,6 +417,37 @@ public final class Main extends JavaPlugin implements Listener {
 		structurelochigh = getLocation(config, "structureregion.high");
 		spectatespawn = getLocation(config, "spectatespawn");
 		lobby = getLocation(config, "lobby");
+	}
+
+	private void clone(Location loc1, Location loc2, Location loc3) {
+		int xmin = loc1.getBlockX();
+		int ymin = loc1.getBlockY();
+		int zmin = loc1.getBlockZ();
+		int xmax = loc2.getBlockX();
+		int ymax = loc2.getBlockY();
+		int zmax = loc2.getBlockZ();
+		int xdest = loc3.getBlockX();
+		int ydest = loc3.getBlockY();
+		int zdest = loc3.getBlockZ();
+
+		for (int x=xmin;x<=xmax;x++) {
+			for (int y=ymin;y<=ymax;y++) {
+				for (int z=zmin;z<=zmax;z++) {
+					Block fromblock = Bukkit.getWorld("world").getBlockAt(x,y,z);
+					Block toblock = Bukkit.getWorld("world").getBlockAt(x-xmin+xdest, y-ymin+ydest, z-zmin+zdest);
+
+					toblock.setBiome(fromblock.getBiome());
+					toblock.setType(fromblock.getType());
+
+					BlockState fromstate = fromblock.getState();
+					BlockState tostate = toblock.getState();
+
+					tostate.setData(fromstate.getData());
+					tostate.update();
+				}
+			}
+		}
+
 	}
 
 	static Location getLocation(ConfigurationSection config, String path) {

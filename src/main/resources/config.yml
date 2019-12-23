@@ -1,69 +1,65 @@
 structureregion:
   low:
-    x: 240.5
-    y: 89.5
-    z: 256.5
+    x: -96.0
+    y: 40.0
+    z: -96.0
     pitch: 0.0
     yaw: 0.0
   high:
-    x: 255.5
-    y: 98.5
-    z: 271.5
+    x: 96.0
+    y: 120.0
+    z: 96.0
     pitch: 0.0
     yaw: 0.0
-
 playregion:
   low:
-    x: 208.5
-    y: 89.5
-    z: 256.5
+    x: 404.0
+    y: 40.0
+    z: 404.0
     pitch: 0.0
     yaw: 0.0
   high:
-    x: 223.5
-    y: 98.5
-    z: 271.5
+    x: 596.0
+    y: 120.0
+    z: 596.0
     pitch: 0.0
     yaw: 0.0
-
 spectatespawn:
-  x: 216.5
-  y: 100.5
-  z: 262.5
+  x: 500.5
+  y: 126.0
+  z: 500.5
   pitch: 0.0
   yaw: 0.0
-
 lobby:
-  x: 248.5
-  y: 100.5
-  z: 262.5
+  x: 0.5
+  y: 126.0
+  z: 0.5
   pitch: 0.0
   yaw: 0.0
-
 teams:
   red:
-    name: "Red"
+    name: Red
     color:
       RED: 255
       BLUE: 0
       GREEN: 0
-    chatcolor: "&c"
+    chatcolor: '&c'
     spawn:
-      x: 209.5
-      y: 90.5
-      z: 264.5
+      x: 421.5
+      y: 66.0
+      z: 500.5
       pitch: 0.0
       yaw: -90.0
     generator:
-      x: 209.5
-      y: 91.5
-      z: 259.5
+      x: 418.5
+      y: 65.5
+      z: 500.5
       pitch: 0.0
       yaw: 0.0
     bed:
-      x: 208.5
-      y: 90.5
-      z: 268.5
+      x: 434.5
+      y: 67.5
+      z: 500.5
       pitch: 0.0
       yaw: 0.0
     shop:
@@ -75,28 +71,28 @@ teams:
       y: 0
       z: 0
   green:
-    name: "Green"
+    name: Green
     color:
       RED: 0
       BLUE: 0
       GREEN: 255
-    chatcolor: "&2"
+    chatcolor: '&2'
     spawn:
-      x: 222.5
-      y: 90.5
-      z: 263.5
+      x: 579.5
+      y: 66.0
+      z: 500.5
       pitch: 0.0
-      yaw: 90.0
+      yaw: -270.0
     generator:
-      x: 222.5
-      y: 91.5
-      z: 268.5
+      x: 582.5
+      y: 65.5
+      z: 500.5
       pitch: 0.0
       yaw: 0.0
     bed:
-      x: 223.5
-      y: 90.5
-      z: 259.5
+      x: 566.5
+      y: 67.5
+      z: 500.5
       pitch: 0.0
       yaw: 0.0
     shop:
@@ -107,16 +103,14 @@ teams:
       x: 0
       y: 0
       z: 0
-
 generators:
   emerald1:
-    item: "emerald"
+    item: emerald
     x: 0
     y: 64
     z: 0
   diamond1:
-    item: "diamond"
+    item: diamond
     x: 0
     y: 64
     z: 0
-

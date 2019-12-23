@@ -16,7 +16,7 @@ class TeamInfo {
   Location spawn, generator, bed;
 
   // per-game variables
-  boolean hasbed = true;
+  boolean hasbed = false;
   int[] upgrades;
   int playersalive;
 
