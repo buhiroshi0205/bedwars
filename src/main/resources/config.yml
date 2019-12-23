@@ -1,56 +1,71 @@
 structureregion:
   low:
-    x: 240
-    y: 89
-    z: 256
+    x: 240.5
+    y: 89.5
+    z: 256.5
+    pitch: 0.0
+    yaw: 0.0
   high:
-    x: 255
-    y: 98
-    z: 271
+    x: 255.5
+    y: 98.5
+    z: 271.5
+    pitch: 0.0
+    yaw: 0.0
 
 playregion:
   low:
-    x: 208
-    y: 89
-    z: 256
+    x: 208.5
+    y: 89.5
+    z: 256.5
+    pitch: 0.0
+    yaw: 0.0
   high:
-    x: 223
-    y: 98
-    z: 271
+    x: 223.5
+    y: 98.5
+    z: 271.5
+    pitch: 0.0
+    yaw: 0.0
 
 spectatespawn:
-  x: 216
-  y: 100
-  z: 262
+  x: 216.5
+  y: 100.5
+  z: 262.5
+  pitch: 0.0
+  yaw: 0.0
 
 lobby:
-  x: 248
-  y: 100
-  z: 262
+  x: 248.5
+  y: 100.5
+  z: 262.5
+  pitch: 0.0
+  yaw: 0.0
 
 teams:
   red:
     name: "Red"
     color:
-      ==: Color
       RED: 255
       BLUE: 0
       GREEN: 0
     chatcolor: "&c"
     spawn:
-      x: 209
-      y: 90
-      z: 264
-      pitch: 0
-      yaw: -90
+      x: 209.5
+      y: 90.5
+      z: 264.5
+      pitch: 0.0
+      yaw: -90.0
     generator:
-      x: 209
-      y: 91
-      z: 259
+      x: 209.5
+      y: 91.5
+      z: 259.5
+      pitch: 0.0
+      yaw: 0.0
     bed:
-      x: 208
-      y: 90
-      z: 268
+      x: 208.5
+      y: 90.5
+      z: 268.5
+      pitch: 0.0
+      yaw: 0.0
     shop:
       x: 0
       y: 0
@@ -62,25 +77,28 @@ teams:
   green:
     name: "Green"
     color:
-      ==: Color
       RED: 0
       BLUE: 0
       GREEN: 255
     chatcolor: "&2"
     spawn:
-      x: 222
-      y: 90
-      z: 263
-      pitch: 0
-      yaw: 90
+      x: 222.5
+      y: 90.5
+      z: 263.5
+      pitch: 0.0
+      yaw: 90.0
     generator:
-      x: 222
-      y: 91
-      z: 268
+      x: 222.5
+      y: 91.5
+      z: 268.5
+      pitch: 0.0
+      yaw: 0.0
     bed:
-      x: 223
-      y: 90
-      z: 259
+      x: 223.5
+      y: 90.5
+      z: 259.5
+      pitch: 0.0
+      yaw: 0.0
     shop:
       x: 0
       y: 0

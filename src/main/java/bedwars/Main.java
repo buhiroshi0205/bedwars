@@ -43,10 +43,16 @@ public final class Main extends JavaPlugin implements Listener {
 		if (gamephase == 0) {
 			if (label.equalsIgnoreCase("initgame")) {
 				initGame(sender);
+			} else if (label.equalsIgnoreCase("setloc")) {
+				if (!(sender instanceof Player)) return true;
+				if (getLocation(config, args[0]) == null) return true;
+				saveLocation(config, args[0], ((Player)sender).getLocation());
+				saveConfig();
+				sender.sendMessage("Location " + args[0] + " successfully updated!");
 			}
 		} else if (gamephase == 1) {
 			if (label.equalsIgnoreCase("jointeam")) {
-				if (!(sender instanceof Player)) return false;
+				if (!(sender instanceof Player)) return true;
 				Player p = (Player) sender;
 				Team prevteam = getTeam(p);
 				for (Team team : teams) {
@@ -81,12 +87,13 @@ public final class Main extends JavaPlugin implements Listener {
 		teams = new ArrayList<Team>();
 		resourcegens = new ArrayList<ResourceSpawner>();
 
-		playloclow = getLocFromConfig(config, "playregion.low", false);
-		playlochigh = getLocFromConfig(config, "playregion.high", false);
-		structureloclow = getLocFromConfig(config, "structureregion.low", false);
-		structurelochigh = getLocFromConfig(config, "structureregion.high", false);
-		spectatespawn = getLocFromConfig(config, "spectatespawn", false);
-		lobby = getLocFromConfig(config, "lobby", false);
+		playloclow = getLocation(config, "playregion.low");
+		playloclow = getLocation(config, "playregion.low");
+		playlochigh = getLocation(config, "playregion.high");
+		structureloclow = getLocation(config, "structureregion.low");
+		structurelochigh = getLocation(config, "structureregion.high");
+		spectatespawn = getLocation(config, "spectatespawn");
+		lobby = getLocation(config, "lobby");
 
 		ConfigurationSection allteamconfigs = config.getConfigurationSection("teams");
 		for (String teamid : allteamconfigs.getKeys(false)) {
@@ -99,15 +106,15 @@ public final class Main extends JavaPlugin implements Listener {
 		}
 
 		Bukkit.dispatchCommand(sender, String.format("clone %d %d %d %d %d %d %d %d %d",
-																								 (int)structureloclow.getX(),
-																								 (int)structureloclow.getY(),
-																								 (int)structureloclow.getZ(),
-																								 (int)structurelochigh.getX(),
-																								 (int)structurelochigh.getY(),
-																								 (int)structurelochigh.getZ(),
-																								 (int)playloclow.getX(),
-																								 (int)playloclow.getY(),
-																								 (int)playloclow.getZ()));
+																								 structureloclow.getBlockX(),
+																								 structureloclow.getBlockY(),
+																								 structureloclow.getBlockZ(),
+																								 structurelochigh.getBlockX(),
+																								 structurelochigh.getBlockY(),
+																								 structurelochigh.getBlockZ(),
+																								 playloclow.getBlockX(),
+																								 playloclow.getBlockY(),
+																								 playloclow.getBlockZ()));
 
 		Bukkit.broadcastMessage("Game initialized!");
 		gamephase = 1;
@@ -146,11 +153,29 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent e) {
-		for (Team team : teams) {
-			for (int i=0;i<team.players.size();i++) {
-				if (team.players.get(i).getUniqueId().equals(e.getPlayer().getUniqueId())) {
-					team.players.remove(i);
-					break;
+		Player p = e.getPlayer();
+		if (gamephase == 1) {
+			Team team = getTeam(p);
+			team.removePlayer(p);
+		}
+	}
+
+	@EventHandler
+	public void onPlayerJoin(PlayerJoinEvent e) {
+		final Player p = e.getPlayer();
+		if (gamephase == 2) {
+			final Team t = getTeam(p);
+			if (t != null) {
+				p.teleport(spectatespawn);
+				p.setGameMode(GameMode.SPECTATOR);
+				if (t.hasbed) {
+					new BukkitRunnable() {
+						@Override
+						public void run() {
+							p.teleport(t.spawn);
+							p.setGameMode(GameMode.SURVIVAL);
+						}
+					}.runTaskLater(this, 100);
 				}
 			}
 		}
@@ -235,23 +260,6 @@ public final class Main extends JavaPlugin implements Listener {
 
 	/* HELPER FUNCTIONS */
 
-	static Location getLocFromConfig(ConfigurationSection configsec, String base, boolean pitchyaw) {
-		if (pitchyaw) {
-			return new Location(Bukkit.getWorld("world"),
-													configsec.getInt(base + ".x"),
-													configsec.getInt(base + ".y"),
-													configsec.getInt(base + ".z"),
-													configsec.getInt(base + ".yaw"),
-													configsec.getInt(base + ".pitch"));
-		} else {
-			return new Location(Bukkit.getWorld("world"),
-													configsec.getInt(base + ".x"),
-													configsec.getInt(base + ".y"),
-													configsec.getInt(base + ".z"));
-		}
-
-	}
-
 	Team getTeam(Player player) {
 		for (Team team : teams) {
 			for (Player p : team.players) {
@@ -261,6 +269,26 @@ public final class Main extends JavaPlugin implements Listener {
 			}
 		}
 		return null;
+	}
+
+	static Location getLocation(ConfigurationSection config, String path) {
+		if (!config.contains(path)) return null;
+		World world = Bukkit.getWorld("world");
+		float x = (float) config.getDouble(path + ".x");
+		float y = (float) config.getDouble(path + ".y");
+		float z = (float) config.getDouble(path + ".z");
+		float pitch = (float) config.getDouble(path + ".pitch");
+		float yaw = (float) config.getDouble(path + ".yaw");
+		return new Location(world, x, y, z, pitch, yaw);
+	}
+
+	void saveLocation(ConfigurationSection config, String path, Location loc) {
+		config.set(path + ".x", loc.getX());
+		config.set(path + ".y", loc.getY());
+		config.set(path + ".z", loc.getZ());
+		config.set(path + ".pitch", loc.getPitch());
+		config.set(path + ".yaw", loc.getYaw());
+		saveConfig();
 	}
 
 }

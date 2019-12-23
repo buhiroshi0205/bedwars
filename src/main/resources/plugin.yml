@@ -7,3 +7,5 @@ commands:
     permission: bedwars.admin
   startgame:
     permission: bedwars.admin
+  setloc:
+    permission: bedwars.admin

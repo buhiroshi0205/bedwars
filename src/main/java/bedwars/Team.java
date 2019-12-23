@@ -21,9 +21,10 @@ class Team {
   public Team(ConfigurationSection config) {
     this.name = config.getString("name");
     this.color = config.getColor("color");
-    this.spawn = Main.getLocFromConfig(config, "spawn", true);
-    this.generator = Main.getLocFromConfig(config, "generator", false);
-    this.bed = Main.getLocFromConfig(config, "bed", false);
+    this.chatcolor = config.getString("chatcolor");
+    this.spawn = Main.getLocation(config, "spawn");
+    this.generator = Main.getLocation(config, "generator");
+    this.bed = Main.getLocation(config, "bed");
   }
 
   public void addPlayer(Player p) {
