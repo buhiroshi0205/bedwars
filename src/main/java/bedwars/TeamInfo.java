@@ -7,19 +7,20 @@ import org.bukkit.Color;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 
-class Team {
+class TeamInfo {
 
+  // constant variables
   String name;
   Color color;
   String chatcolor;
   Location spawn, generator, bed;
+
+  // per-game variables
+  boolean hasbed = true;
+  int[] upgrades;
   int playersalive;
 
-  ArrayList<Player> players = new ArrayList<Player>();
-  boolean hasbed = true;
-  int upgrades[] = {0,0,0,0,0,0,0};
-
-  public Team(ConfigurationSection config) {
+  public TeamInfo(ConfigurationSection config) {
     this.name = config.getString("name");
     this.color = config.getColor("color");
     this.chatcolor = ChatColor.translateAlternateColorCodes('&', config.getString("chatcolor"));
@@ -28,18 +29,10 @@ class Team {
     this.bed = Main.getLocation(config, "bed");
   }
 
-  public void addPlayer(Player p) {
-    players.add(p);
-  }
-
-  public boolean removePlayer(Player p) {
-    for (int i=0;i<players.size();i++) {
-      if (players.get(i).getUniqueId().equals(p.getUniqueId())) {
-        players.remove(i);
-        return true;
-      }
-    }
-    return false;
+  public void newGame(int numplayers) {
+    hasbed = true;
+    upgrades = new int[7];
+    playersalive = numplayers;
   }
 
 }
