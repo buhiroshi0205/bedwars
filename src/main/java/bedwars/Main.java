@@ -62,6 +62,7 @@ public final class Main extends JavaPlugin implements Listener {
 						}
 						team.addPlayer(p);
 						p.sendMessage("Joined team " + team.name);
+						p.setPlayerListName(team.chatcolor + p.getName());
 						break;
 					}
 				}
@@ -102,6 +103,7 @@ public final class Main extends JavaPlugin implements Listener {
 		}
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
+			p.setGameMode(GameMode.ADVENTURE);
 			p.teleport(lobby);
 		}
 
@@ -142,7 +144,7 @@ public final class Main extends JavaPlugin implements Listener {
 		}
 		for (Team team : teams) {
 			for (Player p : team.players) {
-				p.setGameMode(GameMode.SURVIVAL);
+				p.setGameMode(GameMode.ADVENTURE);
 				p.teleport(lobby);
 			}
 		}
@@ -279,7 +281,7 @@ public final class Main extends JavaPlugin implements Listener {
 		float z = (float) config.getDouble(path + ".z");
 		float pitch = (float) config.getDouble(path + ".pitch");
 		float yaw = (float) config.getDouble(path + ".yaw");
-		return new Location(world, x, y, z, pitch, yaw);
+		return new Location(world, x, y, z, yaw, pitch);
 	}
 
 	void saveLocation(ConfigurationSection config, String path, Location loc) {

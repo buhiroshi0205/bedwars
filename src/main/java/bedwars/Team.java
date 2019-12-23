@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import org.bukkit.entity.Player;
 import org.bukkit.Location;
 import org.bukkit.Color;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
 
 class Team {
@@ -21,7 +22,7 @@ class Team {
   public Team(ConfigurationSection config) {
     this.name = config.getString("name");
     this.color = config.getColor("color");
-    this.chatcolor = config.getString("chatcolor");
+    this.chatcolor = ChatColor.translateAlternateColorCodes('&', config.getString("chatcolor"));
     this.spawn = Main.getLocation(config, "spawn");
     this.generator = Main.getLocation(config, "generator");
     this.bed = Main.getLocation(config, "bed");
