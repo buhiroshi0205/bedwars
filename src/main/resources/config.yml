@@ -40,6 +40,7 @@ teams:
   red:
     name: Red
     color:
+      ==: Color
       RED: 255
       BLUE: 0
       GREEN: 0
@@ -73,6 +74,7 @@ teams:
   green:
     name: Green
     color:
+      ==: Color
       RED: 0
       BLUE: 0
       GREEN: 255
@@ -103,14 +105,41 @@ teams:
       x: 0
       y: 0
       z: 0
-generators:
-  emerald1:
-    item: emerald
-    x: 0
-    y: 64
-    z: 0
+diamondgens:
   diamond1:
-    item: diamond
-    x: 0
-    y: 64
-    z: 0
+    x: 469.5
+    y: 67.0
+    z: 471.5
+    pitch: 0.0
+    yaw: 0.0
+  diamond2:
+    x: 471.5
+    y: 67.0
+    z: 531.5
+    pitch: 0.0
+    yaw: 0.0
+  diamond3:
+    x: 531.5
+    y: 67.0
+    z: 529.5
+    pitch: 0.0
+    yaw: 0.0
+  diamond4:
+    x: 529.5
+    y: 67.0
+    z: 469.5
+    pitch: 0.0
+    yaw: 0.0
+emeraldgens:
+  emerald1:
+    x: 493.5
+    y: 71.0
+    z: 489.5
+    pitch: 0.0
+    yaw: 0.0
+  emerald2:
+    x: 508.5
+    y: 71.0
+    z: 512.5
+    pitch: 0.0
+    yaw: 0.0
