@@ -14,7 +14,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.*;
 import org.bukkit.event.entity.*;
-import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.*;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.ConfigurationSection;
@@ -30,6 +31,8 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Set;
 
+import static bedwars.Buy_menu_commandKt.getMasterCommand;
+
 public final class Main extends JavaPlugin implements Listener {
 
 	/* GLOBAL VARIABLES */
@@ -37,9 +40,12 @@ public final class Main extends JavaPlugin implements Listener {
 	int gamephase = 1; // 1 = lobby, 2 = ingame
 	FileConfiguration config;
 	Hashtable<String, TeamInfo> teaminfos = new Hashtable<String, TeamInfo>();
-	ArrayList<ResourceSpawner> resourcegens;
+	ArrayList<ResourceSpawner> diamondgens = new ArrayList<ResourceSpawner>();
+	ArrayList<ResourceSpawner> emeraldgens = new ArrayList<ResourceSpawner>();
 	Location playloclow, playlochigh, structureloclow, structurelochigh, spectatespawn, lobby;
 	Scoreboard sb;
+
+	public static Main INSTANCE;
 
 
 	/* COMMAND LISTENER */
@@ -87,6 +93,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@Override
 	public void onEnable() {
+		INSTANCE = this;
 		// initialize shit
 		getServer().getPluginManager().registerEvents(this, this);
 		getServer().getPluginManager().registerEvents(ShopKeeper.ShopKeeperListener.INSTANCE, this);
@@ -99,13 +106,31 @@ public final class Main extends JavaPlugin implements Listener {
 		ConfigurationSection allteamconfigs = config.getConfigurationSection("teams");
 		for (String teamid : allteamconfigs.getKeys(false)) {
 			ConfigurationSection teamconfig = allteamconfigs.getConfigurationSection(teamid);
-			TeamInfo info = new TeamInfo(teamconfig);
+			TeamInfo info = new TeamInfo(teamconfig, this);
 			teaminfos.put(teamid, info);
 
 			Team newteam = sb.registerNewTeam(teamid);
 			newteam.setPrefix(info.chatcolor + "[" + info.name + "] ");
 			newteam.setCanSeeFriendlyInvisibles(true);
 			newteam.setAllowFriendlyFire(false);
+		}
+
+		// initialize resourcespawners
+		// diamonds
+		ConfigurationSection diamonds = config.getConfigurationSection("diamondgens");
+		ItemStack is = new ItemStack(Material.DIAMOND);
+		for (String genid : diamonds.getKeys(false)) {
+			ResourceSpawner gen = new ResourceSpawner(this, is, getLocation(diamonds, genid));
+			gen.setInterval(600);
+			diamondgens.add(gen);
+		}
+		// emeralds
+		ConfigurationSection emeralds = config.getConfigurationSection("emeraldgens");
+		is = new ItemStack(Material.EMERALD);
+		for (String genid : emeralds.getKeys(false)) {
+			ResourceSpawner gen = new ResourceSpawner(this, is, getLocation(emeralds, genid));
+			gen.setInterval(1200);
+			emeraldgens.add(gen);
 		}
 
 		// initialize player health/kills display
@@ -123,29 +148,14 @@ public final class Main extends JavaPlugin implements Listener {
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			p.setScoreboard(sb);
 		}
-	}
 
-	/*
-	private void initGame(CommandSender sender) {
-		resourcegens = new ArrayList<ResourceSpawner>();
+		// configure commands
+        getCommand("buy").setExecutor(getMasterCommand());
 	}
-	*/
 
 	private void startGame(CommandSender sender) {
 		if (gamephase != 1) return;
 
-		/*
-		Bukkit.dispatchCommand(sender, String.format("clone %d %d %d %d %d %d %d %d %d",
-																								 structureloclow.getBlockX(),
-																								 structureloclow.getBlockY(),
-																								 structureloclow.getBlockZ(),
-																								 structurelochigh.getBlockX(),
-																								 structurelochigh.getBlockY(),
-																								 structurelochigh.getBlockZ(),
-																								 playloclow.getBlockX(),
-																								 playloclow.getBlockY(),
-																								 playloclow.getBlockZ()));
-		*/
 		clone(structureloclow, structurelochigh, playloclow);
 
 		for (Team t : sb.getTeams()) {
@@ -160,14 +170,8 @@ public final class Main extends JavaPlugin implements Listener {
 				Player p = (Player) op;
 				p.teleport(info.spawn);
 				p.setGameMode(GameMode.SURVIVAL);
+				giveLeatherArmor(p, info.color);
 			}
-
-			/*
-			ItemStack is = new ItemStack(Material.IRON_INGOT);
-			ResourceSpawner spawner = new ResourceSpawner(is, team.generator);
-			resourcegens.add(spawner);
-			spawner.runTaskTimer(this, 10, 10);
-			*/
 		}
 
 		// teleport non-participating players as spectators
@@ -178,17 +182,26 @@ public final class Main extends JavaPlugin implements Listener {
 			}
 		}
 
+		// start resource generators
+		for (ResourceSpawner rs : diamondgens) {
+			rs.start();
+		}
+		for (ResourceSpawner rs : emeraldgens) {
+			rs.start();
+		}
+
 		Bukkit.broadcastMessage("Game started!");
 		gamephase = 2;
 	}
 
 	private void endGame() {
 		// clean up and refresh
-		/*
-		for (ResourceSpawner rs : resourcegens) {
-			rs.cancel();
+		for (ResourceSpawner rs : diamondgens) {
+			rs.stop();
 		}
-		*/
+		for (ResourceSpawner rs : emeraldgens) {
+			rs.stop();
+		}
 		for (Team t : sb.getTeams()) {
 			for (OfflinePlayer p : t.getPlayers()) {
 				t.removePlayer(p);
@@ -261,6 +274,20 @@ public final class Main extends JavaPlugin implements Listener {
 	/* IN-GAME EVENT LISTENERS */
 
 	@EventHandler
+	public void onInventoryClick(InventoryClickEvent e) {
+		switch (e.getSlotType()) {
+			case ARMOR:
+			case CRAFTING:
+			case FUEL:
+			case RESULT:
+				e.setCancelled(true);
+				break;
+			default:
+				break;
+		}
+	}
+
+	@EventHandler
 	public void onBlockBreak(BlockBreakEvent e) {
 		if (gamephase != 2) return;
 		Material blocktype = e.getBlock().getType();
@@ -292,12 +319,24 @@ public final class Main extends JavaPlugin implements Listener {
 	}
 
 	@EventHandler
-	public void onItemSpawn(ItemSpawnEvent e) {
-		if (gamephase != 2) return;
+	public void onBlockPlace(BlockPlaceEvent e) {
+		if (!isBetween(playloclow, playlochigh, e.getBlockPlaced().getLocation())) {
+			e.setCancelled(true);
+		}
+	}
 
+	@EventHandler
+	public void onItemSpawn(ItemSpawnEvent e) {
 		// don't drop the bed
 		if (e.getEntity().getItemStack().getType() == Material.BED) {
 			e.setCancelled(true);
+		}
+	}
+
+	@EventHandler
+	public void onPlayerMove(PlayerMoveEvent e) {
+		if (e.getTo().getY() < 0) {
+			e.getPlayer().setHealth(0.0);
 		}
 	}
 
@@ -364,30 +403,41 @@ public final class Main extends JavaPlugin implements Listener {
 	@EventHandler
 	public void onPlayerRespawn(PlayerRespawnEvent e) {
 		if (gamephase == 1) {
-			e.getPlayer().teleport(lobby);
+			e.setRespawnLocation(lobby);
 			e.getPlayer().setGameMode(GameMode.ADVENTURE);
 		} else if (gamephase == 2) {
-			final Player p = e.getPlayer();
-			final Team t = sb.getPlayerTeam(p); //assert not nul
+			Player p = e.getPlayer();
+			Team t = sb.getPlayerTeam(p);
 			assert t != null : " A non-player respawned???";
-			final TeamInfo info = getInfo(t);
+			TeamInfo info = getInfo(t);
 
 			// respawn as spectator first at least for 5 sec
 			e.setRespawnLocation(spectatespawn);
 			p.setGameMode(GameMode.SPECTATOR);
-
-
-
-			/*
-			ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
-			((LeatherArmorMeta)helmet.getItemMeta()).setColor(team.color);
-			p.getInventory().setHelmet(helmet);
-			*/
+			
+			giveLeatherArmor(p, info.color);
 		}
 	}
 
 
 	/* HELPER FUNCTIONS */
+
+	private void giveLeatherArmor(Player p, Color color) {
+		ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
+		ItemStack chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
+		ItemStack leggings = new ItemStack(Material.LEATHER_LEGGINGS);
+		ItemStack boots = new ItemStack(Material.LEATHER_BOOTS);
+		LeatherArmorMeta meta = (LeatherArmorMeta)helmet.getItemMeta();
+		meta.setColor(color);
+		helmet.setItemMeta(meta);
+		chestplate.setItemMeta(meta);
+		leggings.setItemMeta(meta);
+		boots.setItemMeta(meta);
+		p.getInventory().setHelmet(helmet);
+		p.getInventory().setChestplate(chestplate);
+		p.getInventory().setLeggings(leggings);
+		p.getInventory().setBoots(boots);
+	}
 
 	private TeamInfo getInfo(Team t) {
 		return teaminfos.get(t.getName());
@@ -450,7 +500,12 @@ public final class Main extends JavaPlugin implements Listener {
 				}
 			}
 		}
+	}
 
+	private boolean isBetween(Location loc1, Location loc2, Location test) {
+		return loc1.getX() <= test.getX() && test.getX() <= loc2.getX() &&
+					 loc1.getY() <= test.getY() && test.getY() <= loc2.getY() &&
+					 loc1.getZ() <= test.getZ() && test.getZ() <= loc2.getZ();
 	}
 
 	static Location getLocation(ConfigurationSection config, String path) {
@@ -471,23 +526,6 @@ public final class Main extends JavaPlugin implements Listener {
 		config.set(path + ".pitch", loc.getPitch());
 		config.set(path + ".yaw", loc.getYaw());
 		saveConfig();
-	}
-
-}
-
-class ResourceSpawner extends BukkitRunnable {
-
-	ItemStack item;
-	Location loc;
-
-	public ResourceSpawner(ItemStack item, Location loc) {
-		this.item = item;
-		this.loc = loc;
-	}
-
-	@Override
-	public void run() {
-		loc.getWorld().dropItem(loc, item);
 	}
 
 }
