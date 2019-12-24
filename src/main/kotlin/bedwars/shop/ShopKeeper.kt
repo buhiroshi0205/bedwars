@@ -1,7 +1,5 @@
 package bedwars.shop
 
-import bedwars.Globals
-import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Villager
@@ -12,18 +10,16 @@ import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
-import org.bukkit.scheduler.BukkitRunnable
-import org.bukkit.scheduler.BukkitTask
 
 
 /**
  * Created by DEDZTBH on 2019/12/23.
  * Project bedwars
  */
-class ShopKeeper (
+class ShopKeeper(
         val name: String,
         val location: Location
-        ) : Listener {
+) : Listener {
     var shopKeeperEntity: Entity? = null
 
     // Spawning the ShopKeeper

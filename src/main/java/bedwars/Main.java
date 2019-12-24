@@ -90,7 +90,6 @@ public final class Main extends JavaPlugin implements Listener {
 		// initialize shit
 		getServer().getPluginManager().registerEvents(this, this);
 		getServer().getPluginManager().registerEvents(ShopKeeper.ShopKeeperListener.INSTANCE, this);
-		Globals.setPlugin(this);
 		saveDefaultConfig();
 		config = getConfig();
 		sb = Bukkit.getScoreboardManager().getNewScoreboard();
