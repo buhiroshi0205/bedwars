@@ -7,4 +7,3 @@ commands:
     permission: bedwars.admin
   setloc:
     permission: bedwars.admin
-  update:

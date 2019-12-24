@@ -1,7 +1,9 @@
 package bedwars;
 
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
-import java.util.ArrayList;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Location;
@@ -10,13 +12,15 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.lang.IllegalStateException;
+
 class TeamInfo {
 
   // constant variables
   String name;
   Color color;
   String chatcolor;
-  Location spawn, generator, bed;
+  Location spawn, generator, bed, shop;
   ResourceSpawner iron, gold, emerald;
 
   // per-game variables
@@ -31,6 +35,7 @@ class TeamInfo {
     spawn = Main.getLocation(config, "spawn");
     generator = Main.getLocation(config, "generator");
     bed = Main.getLocation(config, "bed");
+    shop = Main.getLocation(config, "shop");
 
     iron = new ResourceSpawner(plugin, new ItemStack(Material.IRON_INGOT), generator);
     gold = new ResourceSpawner(plugin, new ItemStack(Material.GOLD_INGOT), generator);
@@ -46,6 +51,16 @@ class TeamInfo {
     emerald.setInterval(1000);
     iron.start();
     gold.start();
+
+    Entity shopvillager = Bukkit.getWorld("world").spawnEntity(shop, EntityType.VILLAGER);
+    shopvillager.setCustomName("Item Shop");
+    shopvillager.setCustomNameVisible(true);
+  }
+
+  public void stopGenerators() {
+    iron.stop();
+    gold.stop();
+    emerald.stop();
   }
 
 }

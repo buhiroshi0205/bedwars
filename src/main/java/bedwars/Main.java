@@ -5,9 +5,10 @@ import org.bukkit.World;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
+import org.bukkit.block.*;
 import org.bukkit.Material;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
@@ -21,6 +22,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.scoreboard.*;
 import org.bukkit.Location;
 import org.bukkit.Color;
@@ -44,13 +46,13 @@ public final class Main extends JavaPlugin implements Listener {
 	ArrayList<ResourceSpawner> emeraldgens = new ArrayList<ResourceSpawner>();
 	Location playloclow, playlochigh, structureloclow, structurelochigh, spectatespawn, lobby;
 	Scoreboard sb;
+	Shop shop;
 
 
 	/* COMMAND LISTENER */
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		if (label.equalsIgnoreCase("update")) updateDisplay();
 		if (gamephase == 1) {
 
 			if (label.equalsIgnoreCase("setloc")) {
@@ -88,11 +90,13 @@ public final class Main extends JavaPlugin implements Listener {
 	@Override
 	public void onEnable() {
 		// initialize shit
-		getServer().getPluginManager().registerEvents(this, this);
 		saveDefaultConfig();
 		config = getConfig();
 		sb = Bukkit.getScoreboardManager().getNewScoreboard();
 		initializeLocations();
+		shop = new Shop(getLocation(config, "shopchest"));
+		getServer().getPluginManager().registerEvents(this, this);
+		getServer().getPluginManager().registerEvents(shop, this);
 
 		// initialize the teams and team infos
 		ConfigurationSection allteamconfigs = config.getConfigurationSection("teams");
@@ -145,6 +149,7 @@ public final class Main extends JavaPlugin implements Listener {
 	private void startGame(CommandSender sender) {
 		if (gamephase != 1) return;
 
+		// clone region
 		clone(structureloclow, structurelochigh, playloclow);
 
 		for (Team t : sb.getTeams()) {
@@ -185,6 +190,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 	private void endGame() {
 		// clean up and refresh
+		// stop generators
 		for (ResourceSpawner rs : diamondgens) {
 			rs.stop();
 		}
@@ -192,10 +198,19 @@ public final class Main extends JavaPlugin implements Listener {
 			rs.stop();
 		}
 		for (Team t : sb.getTeams()) {
+			getInfo(t).stopGenerators();
+			// reset teams
 			for (OfflinePlayer p : t.getPlayers()) {
 				t.removePlayer(p);
 			}
 		}
+		// remove entities
+		for (Entity e : Bukkit.getWorld("world").getEntities()) {
+			if (e.getType() != EntityType.PLAYER) {
+				e.remove();
+			}
+		}
+
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			sb.resetScores((OfflinePlayer) p);
 		}
@@ -264,6 +279,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onInventoryClick(InventoryClickEvent e) {
+		if (gamephase != 2) return;
 		switch (e.getSlotType()) {
 			case ARMOR:
 			case CRAFTING:
@@ -309,6 +325,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onBlockPlace(BlockPlaceEvent e) {
+		if (gamephase != 2) return;
 		if (!isBetween(playloclow, playlochigh, e.getBlockPlaced().getLocation())) {
 			e.setCancelled(true);
 		}
@@ -324,7 +341,9 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent e) {
-		if (e.getTo().getY() < 0) {
+		if (gamephase == 2 &&
+			  e.getPlayer().getGameMode() == GameMode.SURVIVAL &&
+			  e.getTo().getY() < 0) {
 			e.getPlayer().setHealth(0.0);
 		}
 	}
@@ -372,11 +391,17 @@ public final class Main extends JavaPlugin implements Listener {
 					numaliveteams++;
 				}
 			}
-			if (numaliveteams == 1) {
+			if (numaliveteams <= 1) {
+
 				// game over!
-				getServer().broadcastMessage("    " + getInfo(aliveteam).chatcolor +
-																		 getInfo(aliveteam).name + ChatColor.YELLOW +
-																		 " team wins!!!");
+				if (numaliveteams == 0) {
+					getServer().broadcastMessage(ChatColor.YELLOW + "    No one wins! GG!");
+				} else if (numaliveteams == 1) {
+					getServer().broadcastMessage("    " + getInfo(aliveteam).chatcolor +
+																			 getInfo(aliveteam).name + ChatColor.YELLOW +
+																			 " team wins!!!");
+				}
+
 				// clean up game 10 seconds later
 				new BukkitRunnable() {
 					@Override
@@ -385,6 +410,7 @@ public final class Main extends JavaPlugin implements Listener {
 					}
 				}.runTaskLater(this, 200);
 			}
+		
 		}
 
 	}

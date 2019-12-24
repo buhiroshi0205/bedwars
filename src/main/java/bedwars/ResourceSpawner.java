@@ -5,22 +5,18 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Location;
 
-class ResourceSpawner extends BukkitRunnable {
+class ResourceSpawner {
 
 	JavaPlugin plugin;
 	ItemStack item;
 	Location loc;
 	long interval = 40;
+	BukkitRunnable br;
 
 	public ResourceSpawner(JavaPlugin plugin, ItemStack item, Location loc) {
 		this.plugin = plugin;
 		this.item = item;
 		this.loc = loc;
-	}
-
-	@Override
-	public void run() {
-		loc.getWorld().dropItem(loc, item);
 	}
 
 	public void setInterval(long interval) {
@@ -32,16 +28,25 @@ class ResourceSpawner extends BukkitRunnable {
 	}
 
 	public void stop() {
-		this.cancel();
+		if (br != null) {
+			br.cancel();
+			br = null;
+		}
 	}
 
 	public void start() {
-		this.runTaskTimer(plugin, 0, interval);
+		br = new BukkitRunnable() {
+			@Override
+			public void run() {
+				loc.getWorld().dropItem(loc, item);
+			}
+		};
+		br.runTaskTimer(plugin, 0, interval);
 	}
 
 	public void restart() {
-		this.cancel();
-		this.runTaskTimer(plugin, 0, interval);
+		stop();
+		start();
 	}
 
 }
