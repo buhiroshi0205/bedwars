@@ -1,10 +1,16 @@
 name: bedwars
 main: bedwars.Main
 version: 0.2-SNAPSHOT
+depend:
+  - PylonMenu
 commands:
   jointeam:
+
   startgame:
     permission: bedwars.admin
   setloc:
     permission: bedwars.admin
   update:
+
+  buy:
+    permission: bedwars.buy
