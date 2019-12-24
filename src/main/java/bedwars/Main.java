@@ -1,14 +1,12 @@
 package bedwars;
 
 import bedwars.shop.ShopKeeper;
-import org.bukkit.Bukkit;
-import org.bukkit.World;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.Material;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
@@ -22,9 +20,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.scoreboard.*;
-import org.bukkit.Location;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
 
 
 import java.util.ArrayList;
@@ -414,7 +409,7 @@ public final class Main extends JavaPlugin implements Listener {
 			// respawn as spectator first at least for 5 sec
 			e.setRespawnLocation(spectatespawn);
 			p.setGameMode(GameMode.SPECTATOR);
-			
+
 			giveLeatherArmor(p, info.color);
 		}
 	}
