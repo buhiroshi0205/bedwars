@@ -40,13 +40,6 @@
       <artifactId>kotlin-stdlib-jdk8</artifactId>
       <version>${kotlin.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.spigotmc</groupId>
-      <artifactId>spigot-1.8.8</artifactId>
-      <version>1.8.8</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/libs/spigot-1.8.8.jar</systemPath>
-    </dependency>
 
   </dependencies>
 

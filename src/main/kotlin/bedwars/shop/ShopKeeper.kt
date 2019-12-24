@@ -25,7 +25,6 @@ class ShopKeeper (
         val location: Location
         ) : Listener {
     var shopKeeperEntity: Entity? = null
-    var shopKeeperTeleportTask: BukkitTask? = null
 
     // Spawning the ShopKeeper
     fun spawn() = location.run {
@@ -37,12 +36,6 @@ class ShopKeeper (
             ageLock = true
             profession = Villager.Profession.FARMER
             addPotionEffect(PotionEffect(PotionEffectType.SLOW, Int.MAX_VALUE, 30, false))
-//            ShopKeeperListener.shopKeepers.add(this)
-            shopKeeperTeleportTask = (object : BukkitRunnable() {
-                override fun run() {
-                    teleport(this@ShopKeeper.location)
-                }
-            }).runTaskTimer(Globals.plugin, 0, 20)
         }
     }
 
@@ -50,18 +43,13 @@ class ShopKeeper (
     fun despawn() {
         shopKeeperEntity?.remove()
         shopKeeperEntity = null
-        shopKeeperTeleportTask?.cancel()
-        shopKeeperTeleportTask = null
     }
 
     object ShopKeeperListener : Listener {
-//      Maybe record all shop keepers?
-//        val shopKeepers: MutableSet<Entity> = Collections.newSetFromMap(WeakHashMap<Entity, Boolean>())
 
         // Disable Damage
         @EventHandler
         fun entityDamage(evt: EntityDamageEvent) {
-//            if (shopKeepers.any { evt.entity === it })
             if (evt.entity is Villager)
                 evt.isCancelled = true
         }
@@ -72,7 +60,6 @@ class ShopKeeper (
         // Disable Trading
         @EventHandler
         fun entityInteract(evt: PlayerInteractEntityEvent) {
-//            if (shopKeepers.any { evt.rightClicked === it })
             if (evt.rightClicked is Villager)
                 evt.isCancelled = true
 
