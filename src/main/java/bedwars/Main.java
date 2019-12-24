@@ -1,6 +1,7 @@
 package bedwars;
 
 import bedwars.shop.ShopKeeper;
+import bedwars.shop.ShopKeeperManager;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -76,7 +77,13 @@ public final class Main extends JavaPlugin implements Listener {
 			} else if (label.equalsIgnoreCase("npc")) {
 				if (!(sender instanceof Player)) return true;
 				Player p = ((Player) sender);
-				new ShopKeeper("magic", p.getLocation()).spawn();
+				new ShopKeeper(args[0], p.getLocation(), (playerInteractEntityEvent, shopKeeper) -> {
+					sender.sendMessage(shopKeeper.getName() + ": ?");
+					return null;
+				}).spawn();
+			} else if (label.equalsIgnoreCase("cleannpc")) {
+				if (!(sender instanceof Player)) return true;
+				ShopKeeperManager.INSTANCE.cleanUp();
 			}
 		}
 
@@ -91,7 +98,7 @@ public final class Main extends JavaPlugin implements Listener {
 		INSTANCE = this;
 		// initialize shit
 		getServer().getPluginManager().registerEvents(this, this);
-		getServer().getPluginManager().registerEvents(ShopKeeper.ShopKeeperListener.INSTANCE, this);
+		getServer().getPluginManager().registerEvents(ShopKeeperManager.INSTANCE, this);
 		saveDefaultConfig();
 		config = getConfig();
 		sb = Bukkit.getScoreboardManager().getNewScoreboard();

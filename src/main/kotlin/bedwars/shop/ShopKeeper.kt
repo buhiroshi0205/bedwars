@@ -1,5 +1,6 @@
 package bedwars.shop
 
+import bedwars.util.then
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Villager
@@ -18,8 +19,9 @@ import org.bukkit.potion.PotionEffectType
  */
 class ShopKeeper(
         val name: String,
-        val location: Location
-) : Listener {
+        val location: Location,
+        val onInteract: (PlayerInteractEntityEvent, ShopKeeper) -> Unit
+) {
     var shopKeeperEntity: Entity? = null
 
     // Spawning the ShopKeeper
@@ -31,35 +33,44 @@ class ShopKeeper(
             setAdult()
             ageLock = true
             profession = Villager.Profession.FARMER
-            addPotionEffect(PotionEffect(PotionEffectType.SLOW, Int.MAX_VALUE, 30, false))
+            addPotionEffect(PotionEffect(PotionEffectType.SLOW, Int.MAX_VALUE, 65536, false))
+            ShopKeeperManager.shopKeepers.add(this@ShopKeeper)
         }
     }
 
     // Despawn the ShopKeeper
-    fun despawn() {
+    fun despawn(removeFromManager: Boolean = true) {
+        if (removeFromManager)
+            ShopKeeperManager.shopKeepers.remove(this)
         shopKeeperEntity?.remove()
         shopKeeperEntity = null
     }
+}
 
-    object ShopKeeperListener : Listener {
+object ShopKeeperManager : Listener {
 
-        // Disable Damage
-        @EventHandler
-        fun entityDamage(evt: EntityDamageEvent) {
-            if (evt.entity is Villager)
-                evt.isCancelled = true
+    val shopKeepers = mutableSetOf<ShopKeeper>()
+
+    fun cleanUp() {
+        shopKeepers.forEach {
+            it.despawn(false)
         }
-
-        @EventHandler
-        fun entityDamage(evt: EntityDamageByEntityEvent) = entityDamage(evt as EntityDamageEvent)
-
-        // Disable Trading
-        @EventHandler
-        fun entityInteract(evt: PlayerInteractEntityEvent) {
-            if (evt.rightClicked is Villager)
-                evt.isCancelled = true
-
-        }
+        shopKeepers.clear()
     }
 
+    // Disable Damage
+    @EventHandler
+    fun entityDamage(evt: EntityDamageEvent) =
+            shopKeepers.any { it.shopKeeperEntity === evt.entity } then { evt.isCancelled = true }
+
+    @EventHandler
+    fun entityDamage(evt: EntityDamageByEntityEvent) = entityDamage(evt as EntityDamageEvent)
+
+    // Disable Trading
+    @EventHandler
+    fun entityInteract(evt: PlayerInteractEntityEvent) =
+            shopKeepers.firstOrNull { it.shopKeeperEntity === evt.rightClicked }?.let {
+                evt.isCancelled = true
+                it.onInteract(evt, it)
+            }
 }

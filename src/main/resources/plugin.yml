@@ -13,6 +13,8 @@ commands:
   update:
   npc:
     permission: bedwars.admin
+  cleannpc:
+    permission: bedwars.admin
 
   buy:
     permission: bedwars.buy
