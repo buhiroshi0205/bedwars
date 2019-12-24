@@ -2,6 +2,7 @@ package bedwars;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.Chunk;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -9,6 +10,7 @@ import org.bukkit.block.*;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Fireball;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
@@ -150,6 +152,16 @@ public final class Main extends JavaPlugin implements Listener {
 	private void startGame(CommandSender sender) {
 		if (gamephase != 1) return;
 
+		// load chunks
+		Chunk low = playloclow.getChunk();
+		Chunk high = playlochigh.getChunk();
+		if (high.getX() - low.getX() > 100) Bukkit.broadcastMessage("chunk coords bad");
+		for (int x=low.getX();x<=high.getX();x++) {
+			for (int z=low.getZ();z<=high.getZ();z++) {
+				Bukkit.getWorld("world").getChunkAt(x, z).load();
+			}
+		}
+
 		// remove entities
 		for (Entity e : Bukkit.getWorld("world").getEntities()) {
 			if (e.getType() != EntityType.PLAYER) {
@@ -170,6 +182,7 @@ public final class Main extends JavaPlugin implements Listener {
 			for (OfflinePlayer op : players) {
 				if (!op.isOnline()) continue;
 				Player p = (Player) op;
+				p.setDisplayName(info.chatcolor + p.getName());
 				p.teleport(info.spawn);
 				p.setGameMode(GameMode.SURVIVAL);
 				giveLeatherArmor(p, info.color);
@@ -216,6 +229,9 @@ public final class Main extends JavaPlugin implements Listener {
 
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			sb.resetScores((OfflinePlayer) p);
+			p.setDisplayName(p.getName());
+			p.getEnderChest().clear();
+			p.getInventory().clear();
 		}
 
 		// teleport everyone to lobby
@@ -307,18 +323,17 @@ public final class Main extends JavaPlugin implements Listener {
 				TeamInfo info = getInfo(t);
 				if (loc.distance(info.bed) < 3) {
 					info.hasbed = false;
+					loc.getWorld().playSound(loc, Sound.ENDERDRAGON_GROWL, 100, 1);
 					for (OfflinePlayer op : t.getPlayers()) {
 						if (op.isOnline()) {
 							((Player) op).sendTitle(ChatColor.DARK_RED + "BED DESTROYED",
 																			"You will no longer respawn!");
-							new BukkitRunnable() {
-								@Override
-								public void run() {
-									((Player) op).resetTitle();
-								}
-							}.runTaskLater(this, 60);
 						}
 					}
+					TeamInfo destroyerinfo = getInfo(sb.getPlayerTeam(e.getPlayer()));
+					getServer().broadcastMessage(info.chatcolor + info.name + " bed" + ChatColor.RESET +
+																			 " was destroyed by " + destroyerinfo.chatcolor +
+																			 e.getPlayer().getName() + ChatColor.RESET + "!");
 				}
 			}
 			updateDisplay();
@@ -356,6 +371,7 @@ public final class Main extends JavaPlugin implements Listener {
 			p.getInventory().removeItem(new ItemStack(Material.FIREBALL));
 			Vector direction = p.getLocation().getDirection();
 			Entity fireball = Bukkit.getWorld("world").spawnEntity(p.getLocation().add(0,1.62,0).add(direction), EntityType.FIREBALL);
+			((Fireball)fireball).setShooter(p);
 			fireball.setVelocity(direction);
 		}
 	}
@@ -389,9 +405,33 @@ public final class Main extends JavaPlugin implements Listener {
 	public void onPlayerDeath(PlayerDeathEvent e) {
 		if (gamephase != 2) return;
 		final Player p = e.getEntity();
+		final TeamInfo info = getInfo(sb.getPlayerTeam(p));
+
+		// add color to death message and play death ding
+		String msg = e.getDeathMessage();
+		msg = msg.replace(p.getName(), p.getDisplayName() + ChatColor.RESET);
+		Player killer = p.getKiller();
+		if (killer != null) {
+			msg = msg.replace(killer.getName(), killer.getDisplayName() + ChatColor.RESET);
+			killer.playSound(killer.getLocation(), Sound.ORB_PICKUP, 100, 1);
+		}
+		p.playSound(p.getLocation(), Sound.ORB_PICKUP, 100, 1);
+		if (!info.hasbed) {
+			msg += "." + ChatColor.AQUA + " FINAL KILL!";
+		}
+		e.setDeathMessage(msg);
 
 		// don't drop loot
-		e.getDrops().clear();
+		List<ItemStack> drops = e.getDrops();
+		if (killer != null) {
+			drops.removeIf(is -> is.getType() != Material.IRON_INGOT &&
+													 is.getType() != Material.GOLD_INGOT &&
+													 is.getType() != Material.DIAMOND &&
+													 is.getType() != Material.EMERALD);
+			killer.getInventory().addItem(drops.toArray(new ItemStack[drops.size()]));
+		}
+		drops.clear();
+
 
 		// bypass respawn screen
 		new BukkitRunnable() {
@@ -400,8 +440,6 @@ public final class Main extends JavaPlugin implements Listener {
 				p.spigot().respawn();
 			}
 		}.runTaskLater(this, 1);
-
-		final TeamInfo info = getInfo(sb.getPlayerTeam(p));
 
 		// if team hasbed, put him back to warzone after 5 sec
 		if (info.hasbed) {
@@ -432,11 +470,11 @@ public final class Main extends JavaPlugin implements Listener {
 
 				// game over!
 				if (numaliveteams == 0) {
-					getServer().broadcastMessage(ChatColor.YELLOW + "    No one wins! GG!");
+					getServer().broadcastMessage(ChatColor.YELLOW + "\n\t\t\tGAME OVER!\n\n");
 				} else if (numaliveteams == 1) {
-					getServer().broadcastMessage("    " + getInfo(aliveteam).chatcolor +
-																			 getInfo(aliveteam).name + ChatColor.YELLOW +
-																			 " team wins!!!");
+					getServer().broadcastMessage(ChatColor.YELLOW + "\n\t\t\tGAME OVER!\n\t\t\t" +
+																			 getInfo(aliveteam).chatcolor + getInfo(aliveteam).name +
+																			 ChatColor.YELLOW + " team wins!!!\n\n");
 				}
 
 				// clean up game 10 seconds later
@@ -552,6 +590,10 @@ public final class Main extends JavaPlugin implements Listener {
 
 					tostate.setData(fromstate.getData());
 					tostate.update();
+
+					if (tostate instanceof Chest) {
+						((Chest) tostate).getInventory().clear();
+					}
 				}
 			}
 		}

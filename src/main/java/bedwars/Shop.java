@@ -11,6 +11,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.block.*;
+import org.bukkit.Sound;
 import org.bukkit.Location;
 
 public class Shop implements Listener {
@@ -65,6 +66,9 @@ public class Shop implements Listener {
       if (cost != null && p.getInventory().containsAtLeast(cost, cost.getAmount())) {
         p.getInventory().removeItem(cost);
         p.getInventory().addItem(e.getCurrentItem());
+        p.playSound(p.getLocation(), Sound.NOTE_PLING, 100, 2);
+      } else {
+        p.playSound(p.getLocation(), Sound.ENDERMAN_TELEPORT, 100, 1);
       }
       e.setCancelled(true);
     }
