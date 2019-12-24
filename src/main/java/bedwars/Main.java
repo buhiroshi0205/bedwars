@@ -1,5 +1,6 @@
 package bedwars;
 
+import bedwars.shop.ShopKeeper;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.OfflinePlayer;
@@ -19,12 +20,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.scoreboard.*;
 import org.bukkit.Location;
-import org.bukkit.Color;
 import org.bukkit.ChatColor;
-import org.bukkit.Sound;
 import org.bukkit.GameMode;
 
 
@@ -74,6 +72,10 @@ public final class Main extends JavaPlugin implements Listener {
 				if (!(sender instanceof Player)) return true;
 				startGame(sender);
 				updateDisplay();
+			} else if (label.equalsIgnoreCase("npc")) {
+				if (!(sender instanceof Player)) return true;
+				Player p = ((Player) sender);
+				new ShopKeeper("magic", p.getLocation()).spawn();
 			}
 		}
 
@@ -87,6 +89,8 @@ public final class Main extends JavaPlugin implements Listener {
 	public void onEnable() {
 		// initialize shit
 		getServer().getPluginManager().registerEvents(this, this);
+		getServer().getPluginManager().registerEvents(ShopKeeper.ShopKeeperListener.INSTANCE, this);
+		Globals.setPlugin(this);
 		saveDefaultConfig();
 		config = getConfig();
 		sb = Bukkit.getScoreboardManager().getNewScoreboard();

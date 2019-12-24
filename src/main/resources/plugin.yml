@@ -8,3 +8,5 @@ commands:
   setloc:
     permission: bedwars.admin
   update:
+  npc:
+    permission: bedwars.admin
