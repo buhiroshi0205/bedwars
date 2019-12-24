@@ -46,8 +46,8 @@ class TeamInfo {
     hasbed = true;
     upgrades = new int[7];
     playersalive = numplayers;
-    iron.setInterval(10);
-    gold.setInterval(100);
+    iron.setInterval(20);
+    gold.setInterval(200);
     emerald.setInterval(1000);
     iron.start();
     gold.start();

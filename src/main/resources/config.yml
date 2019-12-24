@@ -144,9 +144,9 @@ emeraldgens:
     pitch: 0.0
     yaw: 0.0
 shopchest:
-  x: 16.0
+  x: 16.5
   y: 123.0
-  z: 0.0
+  z: 0.5
   pitch: 0.0
   yaw: 0.0
 

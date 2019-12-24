@@ -9,18 +9,31 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.block.*;
 import org.bukkit.Location;
 
 public class Shop implements Listener {
 
-  DoubleChest pg1, team;
+  DoubleChest[] pages = new DoubleChest[1];
+  //DoubleChest team;
+  DoubleChest[] costs = new DoubleChest[1];
 
-  public Shop(Location firstchest) {
-    Chest chest = (Chest) Bukkit.getWorld("world").getBlockAt(firstchest).getState();
-    pg1 = (DoubleChest) chest.getInventory().getHolder();
+  public Shop(Location loc) {
+    // team = getDC(loc.clone().add(0,0,2));
+    Location loc2 = loc.clone().subtract(0,2,0);
+    for (int i=0;i<pages.length;i++) {
+      pages[i] = getDC(loc);
+      loc.add(1,0,0);
+      costs[i] = getDC(loc2);
+      loc2.add(1,0,0);
+    }
   }
 
+  private DoubleChest getDC(Location loc) {
+    Chest chest = (Chest) Bukkit.getWorld("world").getBlockAt(loc).getState();
+    return (DoubleChest) chest.getInventory().getHolder();
+  }
 
   private void showItemShop(DoubleChest dc, Player p) {
     Inventory inv = Bukkit.getServer().createInventory(null, 54, "Item Shop");
@@ -29,21 +42,30 @@ public class Shop implements Listener {
   }
 
   public void showUpgradesShop(DoubleChest dc, int[] state, Player p) {
-
+    Inventory inv = Bukkit.getServer().createInventory(null, 54, "Item Shop");
   }
 
   @EventHandler
   public void onPlayerInteractEntity(PlayerInteractEntityEvent e) {
     if (e.getRightClicked().getCustomName().equals("Item Shop")) {
-      showItemShop(pg1, e.getPlayer());
+      showItemShop(pages[0], e.getPlayer());
       e.setCancelled(true);
     }
   }
 
   @EventHandler
   public void onInventoryClick(InventoryClickEvent e) {
+    Player p = (Player) e.getWhoClicked();
     if (e.getClickedInventory().getName().equals("Item Shop")) {
-      e.getWhoClicked().getInventory().addItem(e.getCurrentItem());
+      if (e.getSlot() < pages.length) {
+        showItemShop(pages[e.getSlot()], (Player) p);
+        return;
+      }
+      ItemStack cost = costs[0].getInventory().getItem(e.getSlot());
+      if (cost != null && p.getInventory().containsAtLeast(cost, cost.getAmount())) {
+        p.getInventory().removeItem(cost);
+        p.getInventory().addItem(e.getCurrentItem());
+      }
       e.setCancelled(true);
     }
   }

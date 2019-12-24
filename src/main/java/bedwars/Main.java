@@ -29,11 +29,12 @@ import org.bukkit.Color;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.GameMode;
-
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Set;
+import java.util.List;
 
 public final class Main extends JavaPlugin implements Listener {
 
@@ -149,6 +150,13 @@ public final class Main extends JavaPlugin implements Listener {
 	private void startGame(CommandSender sender) {
 		if (gamephase != 1) return;
 
+		// remove entities
+		for (Entity e : Bukkit.getWorld("world").getEntities()) {
+			if (e.getType() != EntityType.PLAYER) {
+				e.remove();
+			}
+		}
+
 		// clone region
 		clone(structureloclow, structurelochigh, playloclow);
 
@@ -165,6 +173,7 @@ public final class Main extends JavaPlugin implements Listener {
 				p.teleport(info.spawn);
 				p.setGameMode(GameMode.SURVIVAL);
 				giveLeatherArmor(p, info.color);
+				p.getInventory().addItem(new ItemStack(Material.WOOD_SWORD));
 			}
 		}
 
@@ -202,12 +211,6 @@ public final class Main extends JavaPlugin implements Listener {
 			// reset teams
 			for (OfflinePlayer p : t.getPlayers()) {
 				t.removePlayer(p);
-			}
-		}
-		// remove entities
-		for (Entity e : Bukkit.getWorld("world").getEntities()) {
-			if (e.getType() != EntityType.PLAYER) {
-				e.remove();
 			}
 		}
 
@@ -308,6 +311,12 @@ public final class Main extends JavaPlugin implements Listener {
 						if (op.isOnline()) {
 							((Player) op).sendTitle(ChatColor.DARK_RED + "BED DESTROYED",
 																			"You will no longer respawn!");
+							new BukkitRunnable() {
+								@Override
+								public void run() {
+									((Player) op).resetTitle();
+								}
+							}.runTaskLater(this, 60);
 						}
 					}
 				}
@@ -328,7 +337,35 @@ public final class Main extends JavaPlugin implements Listener {
 		if (gamephase != 2) return;
 		if (!isBetween(playloclow, playlochigh, e.getBlockPlaced().getLocation())) {
 			e.setCancelled(true);
+		} else {
+			if (e.getBlockPlaced().getType() == Material.TNT) {
+				e.setCancelled(true);
+				Location loc = e.getBlockPlaced().getLocation();
+				loc.getWorld().spawnEntity(loc.add(0.5,0.5,0.5), EntityType.PRIMED_TNT);
+				e.getPlayer().getInventory().removeItem(new ItemStack(Material.TNT));
+			}
 		}
+	}
+
+	@EventHandler
+	public void onPlayerInteract(PlayerInteractEvent e) {
+		if (gamephase != 2) return;
+		if (e.hasItem() && e.getMaterial() == Material.FIREBALL) {
+			e.setCancelled(true);
+			Player p = e.getPlayer();
+			p.getInventory().removeItem(new ItemStack(Material.FIREBALL));
+			Vector direction = p.getLocation().getDirection();
+			Entity fireball = Bukkit.getWorld("world").spawnEntity(p.getLocation().add(0,1.62,0).add(direction), EntityType.FIREBALL);
+			fireball.setVelocity(direction);
+		}
+	}
+
+	@EventHandler
+	public void onEntityExplode(EntityExplodeEvent e) {
+		List<Block> removedblocks = e.blockList();
+		removedblocks.removeIf(b -> b.getLocation().getWorld().getBlockAt(
+			  												b.getLocation().subtract(playloclow).add(structureloclow))
+																.getType() != Material.AIR);
 	}
 
 	@EventHandler
@@ -431,8 +468,11 @@ public final class Main extends JavaPlugin implements Listener {
 			p.setGameMode(GameMode.SPECTATOR);
 			
 			giveLeatherArmor(p, info.color);
+			p.getInventory().addItem(new ItemStack(Material.WOOD_SWORD));
 		}
 	}
+
+
 
 
 	/* HELPER FUNCTIONS */
