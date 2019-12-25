@@ -2,12 +2,15 @@ package bedwars;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.Chunk;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
+import org.bukkit.block.*;
 import org.bukkit.Material;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Fireball;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
@@ -21,16 +24,18 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.scoreboard.*;
 import org.bukkit.Location;
 import org.bukkit.Color;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
-
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Set;
+import java.util.List;
 
 import static bedwars.Buy_menu_commandKt.getMasterCommand;
 
@@ -45,6 +50,7 @@ public final class Main extends JavaPlugin implements Listener {
 	ArrayList<ResourceSpawner> emeraldgens = new ArrayList<ResourceSpawner>();
 	Location playloclow, playlochigh, structureloclow, structurelochigh, spectatespawn, lobby;
 	Scoreboard sb;
+	Shop shop;
 
 	public static Main INSTANCE;
 
@@ -53,7 +59,6 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		if (label.equalsIgnoreCase("update")) updateDisplay();
 		if (gamephase == 1) {
 
 			if (label.equalsIgnoreCase("setloc")) {
@@ -74,6 +79,7 @@ public final class Main extends JavaPlugin implements Listener {
 				} else {
 					p.sendMessage("Please enter a valid team color (in lower case)!");
 				}
+				updateDisplay();
 
 			} else if (label.equalsIgnoreCase("startgame")) {
 				if (!(sender instanceof Player)) return true;
@@ -92,11 +98,13 @@ public final class Main extends JavaPlugin implements Listener {
 	public void onEnable() {
 		INSTANCE = this;
 		// initialize shit
-		getServer().getPluginManager().registerEvents(this, this);
 		saveDefaultConfig();
 		config = getConfig();
 		sb = Bukkit.getScoreboardManager().getNewScoreboard();
 		initializeLocations();
+		shop = new Shop(getLocation(config, "shopchest"));
+		getServer().getPluginManager().registerEvents(this, this);
+		getServer().getPluginManager().registerEvents(shop, this);
 
 		// initialize the teams and team infos
 		ConfigurationSection allteamconfigs = config.getConfigurationSection("teams");
@@ -152,6 +160,25 @@ public final class Main extends JavaPlugin implements Listener {
 	private void startGame(CommandSender sender) {
 		if (gamephase != 1) return;
 
+		// load chunks
+		Chunk low = playloclow.getChunk();
+		Chunk high = playlochigh.getChunk();
+		if (high.getX() - low.getX() > 100) Bukkit.broadcastMessage("chunk coords bad");
+		for (int x=low.getX();x<=high.getX();x++) {
+			for (int z=low.getZ();z<=high.getZ();z++) {
+				Bukkit.getWorld("world").getChunkAt(x, z).load();
+			}
+		}
+
+		// remove entities
+		for (Entity e : Bukkit.getWorld("world").getEntities()) {
+			if (e.getType() != EntityType.PLAYER) {
+				e.remove();
+			}
+		}
+
+		// clone region
+		clone(structureloclow, structurelochigh, playloclow);
 		clone(structureloclow, structurelochigh, playloclow);
 
 		for (Team t : sb.getTeams()) {
@@ -164,9 +191,13 @@ public final class Main extends JavaPlugin implements Listener {
 			for (OfflinePlayer op : players) {
 				if (!op.isOnline()) continue;
 				Player p = (Player) op;
+				p.setDisplayName(info.chatcolor + p.getName() + ChatColor.RESET);
 				p.teleport(info.spawn);
 				p.setGameMode(GameMode.SURVIVAL);
+				p.getEnderChest().clear();
+				p.getInventory().clear();
 				giveLeatherArmor(p, info.color);
+				p.getInventory().addItem(new ItemStack(Material.WOOD_SWORD));
 			}
 		}
 
@@ -192,6 +223,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 	private void endGame() {
 		// clean up and refresh
+		// stop generators
 		for (ResourceSpawner rs : diamondgens) {
 			rs.stop();
 		}
@@ -199,12 +231,17 @@ public final class Main extends JavaPlugin implements Listener {
 			rs.stop();
 		}
 		for (Team t : sb.getTeams()) {
+			getInfo(t).stopGenerators();
+			// reset teams
 			for (OfflinePlayer p : t.getPlayers()) {
 				t.removePlayer(p);
 			}
 		}
+
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			sb.resetScores((OfflinePlayer) p);
+			p.setDisplayName(p.getName());
+			p.getInventory().clear();
 		}
 
 		// teleport everyone to lobby
@@ -271,6 +308,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onInventoryClick(InventoryClickEvent e) {
+		if (gamephase != 2) return;
 		switch (e.getSlotType()) {
 			case ARMOR:
 			case CRAFTING:
@@ -295,12 +333,17 @@ public final class Main extends JavaPlugin implements Listener {
 				TeamInfo info = getInfo(t);
 				if (loc.distance(info.bed) < 3) {
 					info.hasbed = false;
+					loc.getWorld().playSound(loc, Sound.ENDERDRAGON_GROWL, 100, 1);
 					for (OfflinePlayer op : t.getPlayers()) {
 						if (op.isOnline()) {
 							((Player) op).sendTitle(ChatColor.DARK_RED + "BED DESTROYED",
 																			"You will no longer respawn!");
 						}
 					}
+					TeamInfo destroyerinfo = getInfo(sb.getPlayerTeam(e.getPlayer()));
+					getServer().broadcastMessage(info.chatcolor + info.name + " bed" + ChatColor.RESET +
+																			 " was destroyed by " + destroyerinfo.chatcolor +
+																			 e.getPlayer().getName() + ChatColor.RESET + "!");
 				}
 			}
 			updateDisplay();
@@ -316,9 +359,39 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onBlockPlace(BlockPlaceEvent e) {
+		if (gamephase != 2) return;
 		if (!isBetween(playloclow, playlochigh, e.getBlockPlaced().getLocation())) {
 			e.setCancelled(true);
+		} else {
+			if (e.getBlockPlaced().getType() == Material.TNT) {
+				e.setCancelled(true);
+				Location loc = e.getBlockPlaced().getLocation();
+				loc.getWorld().spawnEntity(loc.add(0.5,0.5,0.5), EntityType.PRIMED_TNT);
+				e.getPlayer().getInventory().removeItem(new ItemStack(Material.TNT));
+			}
 		}
+	}
+
+	@EventHandler
+	public void onPlayerInteract(PlayerInteractEvent e) {
+		if (gamephase != 2) return;
+		if (e.hasItem() && e.getMaterial() == Material.FIREBALL) {
+			e.setCancelled(true);
+			Player p = e.getPlayer();
+			p.getInventory().removeItem(new ItemStack(Material.FIREBALL));
+			Vector direction = p.getLocation().getDirection();
+			Entity fireball = Bukkit.getWorld("world").spawnEntity(p.getLocation().add(0,1.62,0).add(direction), EntityType.FIREBALL);
+			((Fireball)fireball).setShooter(p);
+			fireball.setVelocity(direction);
+		}
+	}
+
+	@EventHandler
+	public void onEntityExplode(EntityExplodeEvent e) {
+		List<Block> removedblocks = e.blockList();
+		removedblocks.removeIf(b -> b.getLocation().getWorld().getBlockAt(
+			  												b.getLocation().subtract(playloclow).add(structureloclow))
+																.getType() != Material.AIR);
 	}
 
 	@EventHandler
@@ -331,8 +404,11 @@ public final class Main extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent e) {
-		if (e.getTo().getY() < 0) {
+		if (gamephase == 2 &&
+			  e.getPlayer().getGameMode() == GameMode.SURVIVAL &&
+			  e.getTo().getY() < 0) {
 			e.getPlayer().setHealth(0.0);
+			e.setCancelled(true);
 		}
 	}
 
@@ -340,9 +416,33 @@ public final class Main extends JavaPlugin implements Listener {
 	public void onPlayerDeath(PlayerDeathEvent e) {
 		if (gamephase != 2) return;
 		final Player p = e.getEntity();
+		final TeamInfo info = getInfo(sb.getPlayerTeam(p));
+
+		// add color to death message and play death ding
+		String msg = e.getDeathMessage();
+		msg = msg.replace(p.getName(), p.getDisplayName() + ChatColor.RESET);
+		Player killer = p.getKiller();
+		if (killer != null) {
+			msg = msg.replace(killer.getName(), killer.getDisplayName() + ChatColor.RESET);
+			killer.playSound(killer.getLocation(), Sound.ORB_PICKUP, 100, 1);
+		}
+		p.playSound(p.getLocation(), Sound.ORB_PICKUP, 100, 1);
+		if (!info.hasbed) {
+			msg += "." + ChatColor.AQUA + " FINAL KILL!";
+		}
+		e.setDeathMessage(msg);
 
 		// don't drop loot
-		e.getDrops().clear();
+		List<ItemStack> drops = e.getDrops();
+		if (killer != null) {
+			drops.removeIf(is -> is.getType() != Material.IRON_INGOT &&
+													 is.getType() != Material.GOLD_INGOT &&
+													 is.getType() != Material.DIAMOND &&
+													 is.getType() != Material.EMERALD);
+			killer.getInventory().addItem(drops.toArray(new ItemStack[drops.size()]));
+		}
+		drops.clear();
+
 
 		// bypass respawn screen
 		new BukkitRunnable() {
@@ -351,8 +451,6 @@ public final class Main extends JavaPlugin implements Listener {
 				p.spigot().respawn();
 			}
 		}.runTaskLater(this, 1);
-
-		final TeamInfo info = getInfo(sb.getPlayerTeam(p));
 
 		// if team hasbed, put him back to warzone after 5 sec
 		if (info.hasbed) {
@@ -379,11 +477,17 @@ public final class Main extends JavaPlugin implements Listener {
 					numaliveteams++;
 				}
 			}
-			if (numaliveteams == 1) {
+			if (numaliveteams <= 1) {
+
 				// game over!
-				getServer().broadcastMessage("    " + getInfo(aliveteam).chatcolor +
-																		 getInfo(aliveteam).name + ChatColor.YELLOW +
-																		 " team wins!!!");
+				if (numaliveteams == 0) {
+					getServer().broadcastMessage(ChatColor.YELLOW + "\n            GAME OVER!\n\n");
+				} else if (numaliveteams == 1) {
+					getServer().broadcastMessage(ChatColor.YELLOW + "\n            GAME OVER!\n            " +
+																			 getInfo(aliveteam).chatcolor + getInfo(aliveteam).name +
+																			 ChatColor.YELLOW + " team wins!!!\n\n");
+				}
+
 				// clean up game 10 seconds later
 				new BukkitRunnable() {
 					@Override
@@ -392,6 +496,7 @@ public final class Main extends JavaPlugin implements Listener {
 					}
 				}.runTaskLater(this, 200);
 			}
+		
 		}
 
 	}
@@ -412,6 +517,7 @@ public final class Main extends JavaPlugin implements Listener {
 			p.setGameMode(GameMode.SPECTATOR);
 			
 			giveLeatherArmor(p, info.color);
+			p.getInventory().addItem(new ItemStack(Material.WOOD_SWORD));
 		}
 	}
 
@@ -448,12 +554,21 @@ public final class Main extends JavaPlugin implements Listener {
 		}
 		display.getScore(".").setScore(1);
 		int i = 2;
-		for (TeamInfo info : teaminfos.values()) {
+		for (Team t : sb.getTeams()) {
+			TeamInfo info = getInfo(t);
 			String base = info.chatcolor + info.name + ChatColor.RESET + ": ";
-			if (info.hasbed) {
-				display.getScore(base + "✓").setScore(i++);
-			} else {
-				display.getScore(base + String.valueOf(info.playersalive)).setScore(i++);
+			if (gamephase == 1) {
+				display.getScore(base + String.valueOf(t.getPlayers().size())).setScore(i++);
+			} else if (gamephase == 2) {
+				if (info.hasbed) {
+					display.getScore(base + "✓").setScore(i++);
+				} else {
+					if (info.playersalive == 0) {
+						display.getScore(base + "✗").setScore(i++);
+					} else {
+						display.getScore(base + String.valueOf(info.playersalive)).setScore(i++);
+					}
+				}
 			}
 		}
 		display.getScore(". ").setScore(i);
@@ -493,6 +608,10 @@ public final class Main extends JavaPlugin implements Listener {
 
 					tostate.setData(fromstate.getData());
 					tostate.update();
+
+					if (tostate instanceof Chest) {
+						((Chest) tostate).getInventory().clear();
+					}
 				}
 			}
 		}
