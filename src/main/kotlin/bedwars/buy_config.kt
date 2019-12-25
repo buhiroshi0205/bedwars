@@ -1,5 +1,6 @@
 package bedwars
 
+import com.dummyc0m.pylon.util.*
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 import java.util.*
@@ -45,6 +46,21 @@ data class Resource(
         val newStack = itemStack.clone()
         newStack.amount = amount
         newStack
+    }
+
+    override fun toString(): String {
+        val name = if (itemStack.type == Material.GOLD_INGOT) {
+            "${GOLD}$amount Gold"
+        } else if (itemStack.type == Material.DIAMOND) {
+            "${BLUE}$amount Diamond"
+        } else if (itemStack.type == Material.EMERALD) {
+            "${GREEN}$amount Emerald"
+        } else if (itemStack.type == Material.IRON_INGOT) {
+            "${GRAY}$amount Iron"
+        } else {
+            "${WHITE}$amount ${itemStack.type.name}"
+        }
+        return "$RESET$name"
     }
 }
 

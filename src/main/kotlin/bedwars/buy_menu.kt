@@ -103,6 +103,29 @@ class BuyNav(app: AppRoot, buyConfig: BuyConfig, player: Player) : RootComponent
 
     override fun render(): RootElement {
         return root(container {
+            // frame along the sides
+            for (i in 0 until 9) {
+                for (j in 0 until 6) {
+                    i(i, j) {
+                        material = Material.STAINED_GLASS_PANE
+                        damage = WOOL_YELLOW
+                        onTick { tick ->
+                            if (tick % 6 < 3) {
+                                itemBuilder {
+                                    material = Material.STAINED_GLASS_PANE
+                                    damage = WOOL_YELLOW
+                                }
+                            } else {
+                                itemBuilder {
+                                    material = Material.STAINED_GLASS_PANE
+                                    damage = WOOL_RED
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             c(1, 0) {
                 h(nav.render(route))
             }

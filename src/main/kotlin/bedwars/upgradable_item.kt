@@ -23,9 +23,10 @@ class UpgradableItem(app: AppRoot,
             item = displayItem
             if (predicateValue) {
                 if (insufficientFunds) {
+                    lore("$RESET$cost")
                     lore("$RESET${RED}INSUFFICIENT FUNDS")
                 } else {
-                    lore("$RESET${GOLD}CLICK TO BUY")
+                    lore("$RESET$cost - ${GOLD}CLICK TO BUY")
                 }
             } else {
                 lore("$RESET${BLUE}ALREADY BOUGHT")
@@ -34,11 +35,13 @@ class UpgradableItem(app: AppRoot,
             onClick { _, _ ->
                 if (upgradePredicate()) {
                     if (player.inventory.containsAtLeast(cost.itemStack, cost.amount)) {
-                        player.inventory.remove(cost.total)
+                        player.inventory.removeItem(cost.total)
                         postPurchase()
                         predicateValue = false
+                        insufficientFunds = false
+                        player.playSound(player.eyeLocation, Sound.NOTE_PLING, 100F, 2F)
                     } else {
-                        player.playSound(player.eyeLocation, Sound.VILLAGER_NO, 1F, 0F)
+                        player.playSound(player.eyeLocation, Sound.ENDERMAN_TELEPORT, 100F, 1F)
                         insufficientFunds = true
                     }
                 } else {

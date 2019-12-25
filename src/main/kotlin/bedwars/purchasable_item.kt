@@ -19,18 +19,21 @@ class PurchasableItem(app: AppRoot, val buyConfig: BuyConfig,
         return item {
             item = displayItem
             if (insufficientFunds) {
+                lore("$RESET$cost")
                 lore("$RESET${RED}INSUFFICIENT FUNDS")
             } else {
-                lore("$RESET${GOLD}CLICK TO BUY")
+                lore("$RESET$cost - ${GOLD}CLICK TO BUY")
             }
 
 
             onClick { _, _ ->
                 if (player.inventory.containsAtLeast(cost.itemStack, cost.amount)) {
-                    player.inventory.remove(cost.total)
+                    player.inventory.removeItem(cost.total)
                     player.inventory.addItem(displayItem.render())
+                    player.playSound(player.eyeLocation, Sound.NOTE_PLING, 100F, 2F)
+                    insufficientFunds = false
                 } else {
-                    player.playSound(player.eyeLocation, Sound.VILLAGER_NO, 1F, 0F)
+                    player.playSound(player.eyeLocation, Sound.ENDERMAN_TELEPORT, 100F, 1F)
                     insufficientFunds = true
                 }
             }

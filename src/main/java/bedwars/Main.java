@@ -463,7 +463,10 @@ public final class Main extends JavaPlugin implements Listener {
                     PlayerUpgrade upgrade = playerUpgrades.getUpgrade(p).downgradeTools();
                     playerUpgrades.setUpgrade(p, upgrade);
 
-                    ItemStack[] armor = upgrade.getArmorSet(info.color);
+
+					p.getInventory().addItem(Game_itemsKt.getWoodSword().render());
+
+					ItemStack[] armor = upgrade.getArmorSet(info.color);
                     ItemStack pick = upgrade.getPick();
                     ItemStack axe = upgrade.getAxe();
                     ItemStack shears = upgrade.getShears();
@@ -533,9 +536,6 @@ public final class Main extends JavaPlugin implements Listener {
 			// respawn as spectator first at least for 5 sec
 			e.setRespawnLocation(spectatespawn);
 			p.setGameMode(GameMode.SPECTATOR);
-			
-			giveLeatherArmor(p, info.color);
-			p.getInventory().addItem(new ItemStack(Material.WOOD_SWORD));
 		}
 	}
 
