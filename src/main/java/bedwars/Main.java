@@ -28,6 +28,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.scoreboard.*;
 import org.bukkit.Location;
 import org.bukkit.Color;
+import org.bukkit.Sound;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.util.Vector;
@@ -50,7 +51,6 @@ public final class Main extends JavaPlugin implements Listener {
 	ArrayList<ResourceSpawner> emeraldgens = new ArrayList<ResourceSpawner>();
 	Location playloclow, playlochigh, structureloclow, structurelochigh, spectatespawn, lobby;
 	Scoreboard sb;
-	Shop shop;
 
 	public static Main INSTANCE;
 
@@ -102,9 +102,7 @@ public final class Main extends JavaPlugin implements Listener {
 		config = getConfig();
 		sb = Bukkit.getScoreboardManager().getNewScoreboard();
 		initializeLocations();
-		shop = new Shop(getLocation(config, "shopchest"));
 		getServer().getPluginManager().registerEvents(this, this);
-		getServer().getPluginManager().registerEvents(shop, this);
 
 		// initialize the teams and team infos
 		ConfigurationSection allteamconfigs = config.getConfigurationSection("teams");
