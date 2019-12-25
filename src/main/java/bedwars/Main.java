@@ -76,6 +76,7 @@ public final class Main extends JavaPlugin implements Listener {
 				} else {
 					p.sendMessage("Please enter a valid team color (in lower case)!");
 				}
+				updateDisplay();
 
 			} else if (label.equalsIgnoreCase("startgame")) {
 				if (!(sender instanceof Player)) return true;
@@ -171,6 +172,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 		// clone region
 		clone(structureloclow, structurelochigh, playloclow);
+		clone(structureloclow, structurelochigh, playloclow);
 
 		for (Team t : sb.getTeams()) {
 			// update team info for new game
@@ -182,9 +184,11 @@ public final class Main extends JavaPlugin implements Listener {
 			for (OfflinePlayer op : players) {
 				if (!op.isOnline()) continue;
 				Player p = (Player) op;
-				p.setDisplayName(info.chatcolor + p.getName());
+				p.setDisplayName(info.chatcolor + p.getName() + ChatColor.RESET);
 				p.teleport(info.spawn);
 				p.setGameMode(GameMode.SURVIVAL);
+				p.getEnderChest().clear();
+				p.getInventory().clear();
 				giveLeatherArmor(p, info.color);
 				p.getInventory().addItem(new ItemStack(Material.WOOD_SWORD));
 			}
@@ -230,7 +234,6 @@ public final class Main extends JavaPlugin implements Listener {
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			sb.resetScores((OfflinePlayer) p);
 			p.setDisplayName(p.getName());
-			p.getEnderChest().clear();
 			p.getInventory().clear();
 		}
 
@@ -398,6 +401,7 @@ public final class Main extends JavaPlugin implements Listener {
 			  e.getPlayer().getGameMode() == GameMode.SURVIVAL &&
 			  e.getTo().getY() < 0) {
 			e.getPlayer().setHealth(0.0);
+			e.setCancelled(true);
 		}
 	}
 
@@ -470,9 +474,9 @@ public final class Main extends JavaPlugin implements Listener {
 
 				// game over!
 				if (numaliveteams == 0) {
-					getServer().broadcastMessage(ChatColor.YELLOW + "\n\t\t\tGAME OVER!\n\n");
+					getServer().broadcastMessage(ChatColor.YELLOW + "\n            GAME OVER!\n\n");
 				} else if (numaliveteams == 1) {
-					getServer().broadcastMessage(ChatColor.YELLOW + "\n\t\t\tGAME OVER!\n\t\t\t" +
+					getServer().broadcastMessage(ChatColor.YELLOW + "\n            GAME OVER!\n            " +
 																			 getInfo(aliveteam).chatcolor + getInfo(aliveteam).name +
 																			 ChatColor.YELLOW + " team wins!!!\n\n");
 				}
@@ -511,8 +515,6 @@ public final class Main extends JavaPlugin implements Listener {
 	}
 
 
-
-
 	/* HELPER FUNCTIONS */
 
 	private void giveLeatherArmor(Player p, Color color) {
@@ -545,12 +547,21 @@ public final class Main extends JavaPlugin implements Listener {
 		}
 		display.getScore(".").setScore(1);
 		int i = 2;
-		for (TeamInfo info : teaminfos.values()) {
+		for (Team t : sb.getTeams()) {
+			TeamInfo info = getInfo(t);
 			String base = info.chatcolor + info.name + ChatColor.RESET + ": ";
-			if (info.hasbed) {
-				display.getScore(base + "✓").setScore(i++);
-			} else {
-				display.getScore(base + String.valueOf(info.playersalive)).setScore(i++);
+			if (gamephase == 1) {
+				display.getScore(base + String.valueOf(t.getPlayers().size())).setScore(i++);
+			} else if (gamephase == 2) {
+				if (info.hasbed) {
+					display.getScore(base + "✓").setScore(i++);
+				} else {
+					if (info.playersalive == 0) {
+						display.getScore(base + "✗").setScore(i++);
+					} else {
+						display.getScore(base + String.valueOf(info.playersalive)).setScore(i++);
+					}
+				}
 			}
 		}
 		display.getScore(". ").setScore(i);

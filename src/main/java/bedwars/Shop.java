@@ -48,7 +48,8 @@ public class Shop implements Listener {
 
   @EventHandler
   public void onPlayerInteractEntity(PlayerInteractEntityEvent e) {
-    if (e.getRightClicked().getCustomName().equals("Item Shop")) {
+    String customname = e.getRightClicked().getCustomName();
+    if (customname != null && customname.equals("Item Shop")) {
       showItemShop(pages[0], e.getPlayer());
       e.setCancelled(true);
     }

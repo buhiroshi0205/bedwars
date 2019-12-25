@@ -4,6 +4,5 @@ version: 0.2-SNAPSHOT
 commands:
   jointeam:
   startgame:
-    permission: bedwars.admin
   setloc:
     permission: bedwars.admin
