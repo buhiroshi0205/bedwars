@@ -1,32 +1,32 @@
 package bedwars;
 
-import org.bukkit.Bukkit;
-import org.bukkit.World;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.Material;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.event.Listener;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.*;
-import org.bukkit.event.entity.*;
-import org.bukkit.event.block.*;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
-import org.bukkit.scoreboard.*;
-import org.bukkit.Location;
-import org.bukkit.Color;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -45,6 +45,9 @@ public final class Main extends JavaPlugin implements Listener {
 	ArrayList<ResourceSpawner> emeraldgens = new ArrayList<ResourceSpawner>();
 	Location playloclow, playlochigh, structureloclow, structurelochigh, spectatespawn, lobby;
 	Scoreboard sb;
+
+    private final PlayerUpgrades playerUpgrades = new PlayerUpgrades();
+    private BuyConfig buyConfig;
 
 	public static Main INSTANCE;
 
@@ -145,8 +148,10 @@ public final class Main extends JavaPlugin implements Listener {
 			p.setScoreboard(sb);
 		}
 
+        // initialize buyConfig
+        buyConfig = Buy_configKt.initBuyConfig(playerUpgrades, teaminfos);
 		// configure commands
-        getCommand("buy").setExecutor(getMasterCommand());
+        getCommand("buy").setExecutor(getMasterCommand(buyConfig));
 	}
 
 	private void startGame(CommandSender sender) {
@@ -206,6 +211,8 @@ public final class Main extends JavaPlugin implements Listener {
 		for (Player p : Bukkit.getOnlinePlayers()) {
 			sb.resetScores((OfflinePlayer) p);
 		}
+
+        playerUpgrades.resetUpgrades();
 
 		// teleport everyone to lobby
 		for (Player p : Bukkit.getOnlinePlayers()) {
@@ -345,12 +352,7 @@ public final class Main extends JavaPlugin implements Listener {
 		e.getDrops().clear();
 
 		// bypass respawn screen
-		new BukkitRunnable() {
-			@Override
-			public void run() {
-				p.spigot().respawn();
-			}
-		}.runTaskLater(this, 1);
+        p.spigot().respawn();
 
 		final TeamInfo info = getInfo(sb.getPlayerTeam(p));
 
@@ -361,6 +363,26 @@ public final class Main extends JavaPlugin implements Listener {
 				public void run() {
 					p.teleport(info.spawn);
 					p.setGameMode(GameMode.SURVIVAL);
+
+                    // hijacking respawn logic here to add tools and armor!
+                    // TODO improve this
+                    PlayerUpgrade upgrade = playerUpgrades.getUpgrade(p).downgradeTools();
+                    playerUpgrades.setUpgrade(p, upgrade);
+
+                    ItemStack[] armor = upgrade.getArmorSet(info.color);
+                    ItemStack pick = upgrade.getPick();
+                    ItemStack axe = upgrade.getAxe();
+                    ItemStack shears = upgrade.getShears();
+                    p.getInventory().setArmorContents(armor);
+                    if (pick != null) {
+                        p.getInventory().addItem(pick);
+                    }
+                    if (axe != null) {
+                        p.getInventory().addItem(axe);
+                    }
+                    if (shears != null) {
+                        p.getInventory().addItem(shears);
+                    }
 				}
 			}.runTaskLater(this, 100);
 
@@ -414,7 +436,6 @@ public final class Main extends JavaPlugin implements Listener {
 			giveLeatherArmor(p, info.color);
 		}
 	}
-
 
 	/* HELPER FUNCTIONS */
 

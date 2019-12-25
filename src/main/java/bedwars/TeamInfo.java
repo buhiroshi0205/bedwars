@@ -1,19 +1,18 @@
 package bedwars;
 
-import org.bukkit.plugin.java.JavaPlugin;
-import java.util.ArrayList;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.Location;
-import org.bukkit.Color;
 import org.bukkit.ChatColor;
+import org.bukkit.Color;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 
-class TeamInfo {
+public class TeamInfo {
 
   // constant variables
   String name;
+  Short woolColor;
   Color color;
   String chatcolor;
   Location spawn, generator, bed;
@@ -26,6 +25,7 @@ class TeamInfo {
 
   public TeamInfo(ConfigurationSection config, JavaPlugin plugin) {
     name = config.getString("name");
+    woolColor = (short) config.getInt("woolColor");
     color = config.getColor("color");
     chatcolor = ChatColor.translateAlternateColorCodes('&', config.getString("chatcolor"));
     spawn = Main.getLocation(config, "spawn");
@@ -48,4 +48,51 @@ class TeamInfo {
     gold.start();
   }
 
+  public String getName() {
+    return name;
+  }
+
+  public Color getColor() {
+    return color;
+  }
+
+  public String getChatcolor() {
+    return chatcolor;
+  }
+
+  public Location getSpawn() {
+    return spawn;
+  }
+
+  public Location getGenerator() {
+    return generator;
+  }
+
+  public Location getBed() {
+    return bed;
+  }
+
+  public ResourceSpawner getIron() {
+    return iron;
+  }
+
+  public ResourceSpawner getGold() {
+    return gold;
+  }
+
+  public ResourceSpawner getEmerald() {
+    return emerald;
+  }
+
+  public boolean isHasbed() {
+    return hasbed;
+  }
+
+  public int[] getUpgrades() {
+    return upgrades;
+  }
+
+  public int getPlayersalive() {
+    return playersalive;
+  }
 }
