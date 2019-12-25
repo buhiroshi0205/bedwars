@@ -5,12 +5,8 @@ depend:
   - PylonMenu
 commands:
   jointeam:
-
   startgame:
-    permission: bedwars.admin
   setloc:
     permission: bedwars.admin
-  update:
-
   buy:
     permission: bedwars.buy

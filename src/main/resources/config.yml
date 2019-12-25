@@ -65,9 +65,9 @@ teams:
       pitch: 0.0
       yaw: 0.0
     shop:
-      x: 0
-      y: 0
-      z: 0
+      x: 421.0
+      y: 66.0
+      z: 494.5
     teamshop:
       x: 0
       y: 0
@@ -100,9 +100,9 @@ teams:
       pitch: 0.0
       yaw: 0.0
     shop:
-      x: 0
-      y: 0
-      z: 0
+      x: 580.0
+      y: 66.0
+      z: 506.5
     teamshop:
       x: 0
       y: 0
@@ -145,3 +145,10 @@ emeraldgens:
     z: 512.5
     pitch: 0.0
     yaw: 0.0
+shopchest:
+  x: 16.5
+  y: 123.0
+  z: 0.5
+  pitch: 0.0
+  yaw: 0.0
+
