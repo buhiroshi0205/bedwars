@@ -143,3 +143,13 @@ emeraldgens:
     z: 512.5
     pitch: 0.0
     yaw: 0.0
+protected:
+  protected1:
+    low:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+    high:
+      x: 16.0
+      y: 256.0
+      z: 16.0

@@ -1,5 +1,6 @@
 package bedwars;
 
+import bedwars.protection.BlockProtection;
 import bedwars.shop.ShopKeeper;
 import bedwars.shop.ShopKeeperManager;
 import org.bukkit.*;
@@ -99,6 +100,7 @@ public final class Main extends JavaPlugin implements Listener {
 		// initialize shit
 		getServer().getPluginManager().registerEvents(this, this);
 		getServer().getPluginManager().registerEvents(ShopKeeperManager.INSTANCE, this);
+		getServer().getPluginManager().registerEvents(BlockProtection.INSTANCE, this);
 		saveDefaultConfig();
 		config = getConfig();
 		sb = Bukkit.getScoreboardManager().getNewScoreboard();
@@ -134,6 +136,9 @@ public final class Main extends JavaPlugin implements Listener {
 			gen.setInterval(1200);
 			emeraldgens.add(gen);
 		}
+
+		// set protected area
+		BlockProtection.loadProtectedAreas(config, "protected");
 
 		// initialize player health/kills display
 		Objective health = sb.registerNewObjective("health", "health");
