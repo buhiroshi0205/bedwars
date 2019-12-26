@@ -108,16 +108,19 @@ class BuyNav(app: AppRoot, buyConfig: BuyConfig, player: Player) : RootComponent
                 for (j in 0 until 6) {
                     i(i, j) {
                         material = Material.STAINED_GLASS_PANE
+                        displayName = RESET
                         damage = WOOL_YELLOW
                         onTick { tick ->
                             if (tick % 6 < 3) {
                                 itemBuilder {
                                     material = Material.STAINED_GLASS_PANE
+                                    displayName = RESET
                                     damage = WOOL_YELLOW
                                 }
                             } else {
                                 itemBuilder {
                                     material = Material.STAINED_GLASS_PANE
+                                    displayName = RESET
                                     damage = WOOL_RED
                                 }
                             }

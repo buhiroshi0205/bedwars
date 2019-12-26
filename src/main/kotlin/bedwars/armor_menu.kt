@@ -4,6 +4,7 @@ import com.dummyc0m.pylon.app.component.AppRoot
 import com.dummyc0m.pylon.app.component.Component
 import com.dummyc0m.pylon.app.view.ViewElement
 import com.dummyc0m.pylon.app.view.container
+import com.dummyc0m.pylon.util.RESET
 import org.bukkit.entity.Player
 
 fun upgradeArmor(player: Player, buyConfig: BuyConfig, level: ArmorLevel): () -> Unit {
@@ -23,7 +24,7 @@ fun upgradeArmor(player: Player, buyConfig: BuyConfig, level: ArmorLevel): () ->
 
 class BuyArmor(app: AppRoot, buyConfig: BuyConfig, player: Player) : Component(app) {
     private val chainmail = UpgradableItem(app,
-            chainmailLeggings,
+            chainmailLeggings.clone().also { it.displayName = "${RESET}Chain Armor" },
             { buyConfig.playerUpgrades.getUpgrade(player).armorLevel < ArmorLevel.Chainmail },
             player,
             buyConfig.chainmailArmorCost,
@@ -31,7 +32,7 @@ class BuyArmor(app: AppRoot, buyConfig: BuyConfig, player: Player) : Component(a
     )
 
     private val iron = UpgradableItem(app,
-            ironLeggings,
+            ironLeggings.clone().also { it.displayName = "${RESET}Iron Armor" },
             { buyConfig.playerUpgrades.getUpgrade(player).armorLevel < ArmorLevel.Iron },
             player,
             buyConfig.ironArmorCost,
@@ -39,7 +40,7 @@ class BuyArmor(app: AppRoot, buyConfig: BuyConfig, player: Player) : Component(a
     )
 
     private val diamond = UpgradableItem(app,
-            diamondLeggings,
+            diamondLeggings.clone().also { it.displayName = "${RESET}Diamond Armor" },
             { buyConfig.playerUpgrades.getUpgrade(player).armorLevel < ArmorLevel.Diamond },
             player,
             buyConfig.diamondArmorCost,
