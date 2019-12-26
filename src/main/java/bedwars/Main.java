@@ -1,7 +1,6 @@
 package bedwars;
 
 import bedwars.protection.BlockProtection;
-import bedwars.shop.ShopKeeper;
 import bedwars.shop.ShopKeeperManager;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -78,10 +77,10 @@ public final class Main extends JavaPlugin implements Listener {
 			} else if (label.equalsIgnoreCase("npc")) {
 				if (!(sender instanceof Player)) return true;
 				Player p = ((Player) sender);
-				new ShopKeeper(args[0], p.getLocation(), (playerInteractEntityEvent, shopKeeper) -> {
+				ShopKeeperManager.INSTANCE.spawn(args[0], p.getLocation(), (evt, shopKeeper) -> {
 					sender.sendMessage(shopKeeper.getName() + ": ?");
 					return null;
-				}).spawn();
+				});
 			} else if (label.equalsIgnoreCase("cleannpc")) {
 				if (!(sender instanceof Player)) return true;
 				ShopKeeperManager.INSTANCE.cleanUp();

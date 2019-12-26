@@ -11,57 +11,61 @@ import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.player.PlayerInteractEntityEvent
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
+import java.util.*
 
 
 /**
  * Created by DEDZTBH on 2019/12/23.
  * Project bedwars
  */
-class ShopKeeper(
+data class ShopKeeper(
         val name: String,
         val location: Location,
         val onInteract: (PlayerInteractEntityEvent, ShopKeeper) -> Unit
 ) {
     var shopKeeperEntity: Entity? = null
-
-    // Spawning the ShopKeeper
-    fun spawn() = location.run {
-        if (shopKeeperEntity != null) return@run
-        shopKeeperEntity = world.spawn(location, Villager::class.java)?.apply {
-            customName = this@ShopKeeper.name
-            isCustomNameVisible = true
-            setAdult()
-            ageLock = true
-            profession = Villager.Profession.FARMER
-            addPotionEffect(PotionEffect(PotionEffectType.SLOW, Int.MAX_VALUE, 65536, false))
-            ShopKeeperManager.shopKeepers.add(this@ShopKeeper)
-        }
-    }
-
-    // Despawn the ShopKeeper
-    fun despawn(removeFromManager: Boolean = true) {
-        if (removeFromManager)
-            ShopKeeperManager.shopKeepers.remove(this)
-        shopKeeperEntity?.remove()
-        shopKeeperEntity = null
-    }
 }
 
 object ShopKeeperManager : Listener {
 
-    val shopKeepers = mutableSetOf<ShopKeeper>()
+    val shopKeepers = mutableMapOf<UUID, ShopKeeper>()
 
+    // Spawning the ShopKeeper
+    fun spawn(name: String, location: Location, onInteract: (PlayerInteractEntityEvent, ShopKeeper) -> Unit): ShopKeeper =
+            ShopKeeper(name, location, onInteract).also {
+                it.location.run {
+                    if (it.shopKeeperEntity != null) return@run
+                    it.shopKeeperEntity = world.spawn(it.location, Villager::class.java)?.apply {
+                        customName = it.name
+                        isCustomNameVisible = true
+                        setAdult()
+                        ageLock = true
+                        profession = Villager.Profession.FARMER
+                        addPotionEffect(PotionEffect(PotionEffectType.SLOW, Int.MAX_VALUE, 65536, false))
+                        shopKeepers[uniqueId] = it
+                    }
+                }
+            }
+
+    // Despawn the ShopKeeper
+    // Does not remove from shopKeepers
+    fun despawn(shopKeeper: ShopKeeper) = shopKeeper.run {
+        shopKeeperEntity?.remove()
+        shopKeeperEntity = null
+    }
+
+    // Clean up all shopkeepers
     fun cleanUp() {
-        shopKeepers.forEach {
-            it.despawn(false)
-        }
+        shopKeepers.forEach { (_, shopKeeper) -> despawn(shopKeeper) }
         shopKeepers.clear()
     }
 
     // Disable Damage
     @EventHandler
     fun entityDamage(evt: EntityDamageEvent) =
-            shopKeepers.any { it.shopKeeperEntity === evt.entity } then { evt.isCancelled = true }
+            shopKeepers.any { (uuid, _) ->
+                uuid == evt.entity.uniqueId
+            } then { evt.isCancelled = true }
 
     @EventHandler
     fun entityDamage(evt: EntityDamageByEntityEvent) = entityDamage(evt as EntityDamageEvent)
@@ -69,8 +73,8 @@ object ShopKeeperManager : Listener {
     // Disable Trading
     @EventHandler
     fun entityInteract(evt: PlayerInteractEntityEvent) =
-            shopKeepers.firstOrNull { it.shopKeeperEntity === evt.rightClicked }?.let {
+            shopKeepers[evt.rightClicked.uniqueId]?.run {
                 evt.isCancelled = true
-                it.onInteract(evt, it)
+                onInteract(evt, this)
             }
 }
