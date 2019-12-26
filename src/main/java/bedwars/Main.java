@@ -161,6 +161,9 @@ public final class Main extends JavaPlugin implements Listener {
 	private void startGame(CommandSender sender) {
 		if (gamephase != 1) return;
 
+		// reset player upgrades from the previous round
+		playerUpgrades.resetUpgrades();
+
 		// load chunks
 		Chunk low = playloclow.getChunk();
 		Chunk high = playlochigh.getChunk();
@@ -244,8 +247,6 @@ public final class Main extends JavaPlugin implements Listener {
 			p.setDisplayName(p.getName());
 			p.getInventory().clear();
 		}
-
-        playerUpgrades.resetUpgrades();
 
 		// teleport everyone to lobby
 		for (Player p : Bukkit.getOnlinePlayers()) {
