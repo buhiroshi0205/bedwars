@@ -1,6 +1,7 @@
 name: bedwars
 main: bedwars.Main
 version: 0.2-SNAPSHOT
+depend: [ProtocolLib]
 commands:
   jointeam:
   startgame:
