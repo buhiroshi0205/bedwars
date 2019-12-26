@@ -1,9 +1,8 @@
 package bedwars;
 
 import org.bukkit.*;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.block.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
@@ -23,12 +22,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.*;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
@@ -37,6 +32,10 @@ import java.util.List;
 import java.util.Set;
 
 import static bedwars.Buy_menu_commandKt.getMasterCommand;
+
+import bedwars.protection.BlockProtection;
+import bedwars.shop.ShopKeeperManager;
+
 
 public final class Main extends JavaPlugin implements Listener {
 
@@ -86,6 +85,16 @@ public final class Main extends JavaPlugin implements Listener {
 				if (!(sender instanceof Player)) return true;
 				startGame(sender);
 				updateDisplay();
+			} else if (label.equalsIgnoreCase("npc")) {
+				if (!(sender instanceof Player)) return true;
+				Player p = ((Player) sender);
+				ShopKeeperManager.INSTANCE.spawn(args[0], p.getLocation(), (evt, shopKeeper) -> {
+					sender.sendMessage(shopKeeper.getName() + ": ?");
+					return null;
+				});
+			} else if (label.equalsIgnoreCase("cleannpc")) {
+				if (!(sender instanceof Player)) return true;
+				ShopKeeperManager.INSTANCE.cleanUp();
 			}
 		}
 
@@ -104,6 +113,8 @@ public final class Main extends JavaPlugin implements Listener {
 		sb = Bukkit.getScoreboardManager().getNewScoreboard();
 		initializeLocations();
 		getServer().getPluginManager().registerEvents(this, this);
+		getServer().getPluginManager().registerEvents(ShopKeeperManager.INSTANCE, this);
+		getServer().getPluginManager().registerEvents(BlockProtection.INSTANCE, this);
 
 		// initialize the teams and team infos
 		ConfigurationSection allteamconfigs = config.getConfigurationSection("teams");
@@ -135,6 +146,9 @@ public final class Main extends JavaPlugin implements Listener {
 			gen.setInterval(1200);
 			emeraldgens.add(gen);
 		}
+
+		// set protected area
+		BlockProtection.loadProtectedAreas(config, "protected");
 
 		// initialize player health/kills display
 		Objective health = sb.registerNewObjective("health", "health");
@@ -541,23 +555,6 @@ public final class Main extends JavaPlugin implements Listener {
 	}
 
 	/* HELPER FUNCTIONS */
-
-	private void giveLeatherArmor(Player p, Color color) {
-		ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
-		ItemStack chestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
-		ItemStack leggings = new ItemStack(Material.LEATHER_LEGGINGS);
-		ItemStack boots = new ItemStack(Material.LEATHER_BOOTS);
-		LeatherArmorMeta meta = (LeatherArmorMeta)helmet.getItemMeta();
-		meta.setColor(color);
-		helmet.setItemMeta(meta);
-		chestplate.setItemMeta(meta);
-		leggings.setItemMeta(meta);
-		boots.setItemMeta(meta);
-		p.getInventory().setHelmet(helmet);
-		p.getInventory().setChestplate(chestplate);
-		p.getInventory().setLeggings(leggings);
-		p.getInventory().setBoots(boots);
-	}
 
 	private TeamInfo getInfo(Team t) {
 		return teaminfos.get(t.getName());

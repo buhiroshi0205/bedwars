@@ -8,5 +8,11 @@ commands:
   startgame:
   setloc:
     permission: bedwars.admin
+  update:
+  npc:
+    permission: bedwars.admin
+  cleannpc:
+    permission: bedwars.admin
+
   buy:
     permission: bedwars.buy
