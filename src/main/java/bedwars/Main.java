@@ -24,7 +24,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.scoreboard.*;
 import org.bukkit.Location;
 import org.bukkit.Color;
