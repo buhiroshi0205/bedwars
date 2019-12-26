@@ -1,42 +1,40 @@
 package bedwars;
 
-import org.bukkit.Bukkit;
-import org.bukkit.World;
-import org.bukkit.Chunk;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.block.*;
-import org.bukkit.Material;
+import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Chest;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Fireball;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.event.Listener;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.*;
-import org.bukkit.event.entity.*;
-import org.bukkit.event.block.*;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
+import org.bukkit.event.player.*;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.scoreboard.*;
-import org.bukkit.Location;
-import org.bukkit.Color;
-import org.bukkit.Sound;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 
 import static bedwars.Buy_menu_commandKt.getMasterCommand;
 
@@ -51,6 +49,9 @@ public final class Main extends JavaPlugin implements Listener {
 	ArrayList<ResourceSpawner> emeraldgens = new ArrayList<ResourceSpawner>();
 	Location playloclow, playlochigh, structureloclow, structurelochigh, spectatespawn, lobby;
 	Scoreboard sb;
+
+    private final PlayerUpgrades playerUpgrades = new PlayerUpgrades();
+    private BuyConfig buyConfig;
 
 	public static Main INSTANCE;
 
@@ -151,12 +152,17 @@ public final class Main extends JavaPlugin implements Listener {
 			p.setScoreboard(sb);
 		}
 
+        // initialize buyConfig
+        buyConfig = Buy_configKt.initBuyConfig(playerUpgrades, teaminfos);
 		// configure commands
-        getCommand("buy").setExecutor(getMasterCommand());
+        getCommand("buy").setExecutor(getMasterCommand(buyConfig));
 	}
 
 	private void startGame(CommandSender sender) {
 		if (gamephase != 1) return;
+
+		// reset player upgrades from the previous round
+		playerUpgrades.resetUpgrades();
 
 		// load chunks
 		Chunk low = playloclow.getChunk();
@@ -443,12 +449,7 @@ public final class Main extends JavaPlugin implements Listener {
 
 
 		// bypass respawn screen
-		new BukkitRunnable() {
-			@Override
-			public void run() {
-				p.spigot().respawn();
-			}
-		}.runTaskLater(this, 1);
+        p.spigot().respawn();
 
 		// if team hasbed, put him back to warzone after 5 sec
 		if (info.hasbed) {
@@ -457,6 +458,29 @@ public final class Main extends JavaPlugin implements Listener {
 				public void run() {
 					p.teleport(info.spawn);
 					p.setGameMode(GameMode.SURVIVAL);
+
+                    // hijacking respawn logic here to add tools and armor!
+                    // TODO improve this
+                    PlayerUpgrade upgrade = playerUpgrades.getUpgrade(p).downgradeTools();
+                    playerUpgrades.setUpgrade(p, upgrade);
+
+
+					p.getInventory().addItem(Game_itemsKt.getWoodSword().render());
+
+					ItemStack[] armor = upgrade.getArmorSet(info.color);
+                    ItemStack pick = upgrade.getPick();
+                    ItemStack axe = upgrade.getAxe();
+                    ItemStack shears = upgrade.getShears();
+                    p.getInventory().setArmorContents(armor);
+                    if (pick != null) {
+                        p.getInventory().addItem(pick);
+                    }
+                    if (axe != null) {
+                        p.getInventory().addItem(axe);
+                    }
+                    if (shears != null) {
+                        p.getInventory().addItem(shears);
+                    }
 				}
 			}.runTaskLater(this, 100);
 
@@ -494,7 +518,7 @@ public final class Main extends JavaPlugin implements Listener {
 					}
 				}.runTaskLater(this, 200);
 			}
-		
+
 		}
 
 	}
@@ -513,12 +537,8 @@ public final class Main extends JavaPlugin implements Listener {
 			// respawn as spectator first at least for 5 sec
 			e.setRespawnLocation(spectatespawn);
 			p.setGameMode(GameMode.SPECTATOR);
-			
-			giveLeatherArmor(p, info.color);
-			p.getInventory().addItem(new ItemStack(Material.WOOD_SWORD));
 		}
 	}
-
 
 	/* HELPER FUNCTIONS */
 

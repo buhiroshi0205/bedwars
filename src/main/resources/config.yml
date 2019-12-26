@@ -39,6 +39,7 @@ lobby:
 teams:
   red:
     name: Red
+    woolColor: 14
     color:
       ==: Color
       RED: 255
@@ -73,6 +74,7 @@ teams:
       z: 0
   green:
     name: Green
+    woolColor: 5
     color:
       ==: Color
       RED: 0
