@@ -4,6 +4,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.Location;
+import org.bukkit.util.Vector;
 
 class ResourceSpawner {
 
@@ -38,7 +39,7 @@ class ResourceSpawner {
 		br = new BukkitRunnable() {
 			@Override
 			public void run() {
-				loc.getWorld().dropItem(loc, item);
+				loc.getWorld().dropItem(loc, item).setVelocity(new Vector(0,0,0));
 			}
 		};
 		br.runTaskTimer(plugin, 0, interval);

@@ -8,9 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.block.*;
 import org.bukkit.Material;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Fireball;
+import org.bukkit.entity.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
@@ -18,6 +16,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.block.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.ConfigurationSection;
@@ -25,6 +24,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scoreboard.*;
 import org.bukkit.Location;
 import org.bukkit.Color;
@@ -112,7 +112,7 @@ public final class Main extends JavaPlugin implements Listener {
 			Team newteam = sb.registerNewTeam(teamid);
 			newteam.setPrefix(info.chatcolor + "[" + info.name + "] ");
 			newteam.setCanSeeFriendlyInvisibles(true);
-			newteam.setAllowFriendlyFire(false);
+			newteam.setAllowFriendlyFire(true);
 		}
 
 		// initialize resourcespawners
@@ -296,6 +296,16 @@ public final class Main extends JavaPlugin implements Listener {
 		}
 	}
 
+	@EventHandler
+	public void onWeatherChange(WeatherChangeEvent e) {
+		e.setCancelled(e.toWeatherState());
+	}
+
+	@EventHandler
+	public void onFoodLevelChange(FoodLevelChangeEvent e) {
+		e.setFoodLevel(20);
+	}
+
 
 	/* IN-GAME EVENT LISTENERS */
 
@@ -373,9 +383,10 @@ public final class Main extends JavaPlugin implements Listener {
 			Player p = e.getPlayer();
 			p.getInventory().removeItem(new ItemStack(Material.FIREBALL));
 			Vector direction = p.getLocation().getDirection();
-			Entity fireball = Bukkit.getWorld("world").spawnEntity(p.getLocation().add(0,1.62,0).add(direction), EntityType.FIREBALL);
-			((Fireball)fireball).setShooter(p);
+			Fireball fireball = (Fireball) Bukkit.getWorld("world").spawnEntity(p.getLocation().add(0,1.62,0).add(direction), EntityType.FIREBALL);
+			fireball.setShooter(p);
 			fireball.setVelocity(direction);
+			fireball.setYield(1.5F);
 		}
 	}
 
@@ -401,6 +412,28 @@ public final class Main extends JavaPlugin implements Listener {
 			  e.getPlayer().getGameMode() == GameMode.SURVIVAL &&
 			  e.getTo().getY() < 0) {
 			e.getPlayer().setHealth(0.0);
+			e.setCancelled(true);
+		}
+	}
+
+	@EventHandler
+	public void onEntityDamageByEntity(EntityDamageByEntityEvent e) {
+		if (gamephase != 2) return;
+		if (!(e.getEntity() instanceof Player)) return;
+		Player p = (Player) e.getEntity();
+		Player damager;
+		if (e.getDamager() instanceof Player) {
+			damager = (Player) e.getDamager();
+		} else {
+			if (e.getDamager() instanceof Arrow) {
+				ProjectileSource ps = ((Arrow) e.getDamager()).getShooter();
+				if (ps == null || !(ps instanceof Player)) return;
+				damager = (Player) ps;
+			} else {
+				return;
+			}
+		}
+		if (sb.getPlayerTeam(p).getName().equals(sb.getPlayerTeam(damager).getName())) {
 			e.setCancelled(true);
 		}
 	}
