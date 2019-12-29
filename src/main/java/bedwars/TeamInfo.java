@@ -47,9 +47,11 @@ public class TeamInfo {
     iron.start();
     gold.start();
 
+    /*
     Entity shopvillager = Bukkit.getWorld("world").spawnEntity(shop, EntityType.VILLAGER);
     shopvillager.setCustomName("Item Shop");
     shopvillager.setCustomNameVisible(true);
+    */
   }
 
   public void stopGenerators() {

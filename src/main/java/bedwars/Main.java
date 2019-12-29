@@ -35,6 +35,7 @@ import static bedwars.Buy_menu_commandKt.getMasterCommand;
 
 import bedwars.protection.BlockProtection;
 import bedwars.shop.ShopKeeperManager;
+import static bedwars.Buy_menuKt.launchBuyMenu;
 
 
 public final class Main extends JavaPlugin implements Listener {
@@ -166,10 +167,10 @@ public final class Main extends JavaPlugin implements Listener {
 			p.setScoreboard(sb);
 		}
 
-        // initialize buyConfig
-        buyConfig = Buy_configKt.initBuyConfig(playerUpgrades, teaminfos);
+    // initialize buyConfig
+    buyConfig = Buy_configKt.initBuyConfig(playerUpgrades, teaminfos);
 		// configure commands
-        getCommand("buy").setExecutor(getMasterCommand(buyConfig));
+    getCommand("buy").setExecutor(getMasterCommand(buyConfig));
 	}
 
 	private void startGame(CommandSender sender) {
@@ -181,7 +182,6 @@ public final class Main extends JavaPlugin implements Listener {
 		// load chunks
 		Chunk low = playloclow.getChunk();
 		Chunk high = playlochigh.getChunk();
-		if (high.getX() - low.getX() > 100) Bukkit.broadcastMessage("chunk coords bad");
 		for (int x=low.getX();x<=high.getX();x++) {
 			for (int z=low.getZ();z<=high.getZ();z++) {
 				Bukkit.getWorld("world").getChunkAt(x, z).load();
@@ -189,6 +189,7 @@ public final class Main extends JavaPlugin implements Listener {
 		}
 
 		// remove entities
+		ShopKeeperManager.INSTANCE.cleanUp();
 		for (Entity e : Bukkit.getWorld("world").getEntities()) {
 			if (e.getType() != EntityType.PLAYER) {
 				e.remove();
@@ -204,6 +205,11 @@ public final class Main extends JavaPlugin implements Listener {
 			Set<OfflinePlayer> players = t.getPlayers();
 			TeamInfo info = getInfo(t);
 			info.newGame(players.size());
+			// spawn npc
+			ShopKeeperManager.INSTANCE.spawn(info.name + " Item Shop", info.shop, (evt, shopKeeper) -> {
+				launchBuyMenu(this, buyConfig, evt.getPlayer());
+				return null;
+			});
 
 			// teleport players
 			for (OfflinePlayer op : players) {
@@ -214,8 +220,6 @@ public final class Main extends JavaPlugin implements Listener {
 				p.setGameMode(GameMode.SURVIVAL);
 				p.getEnderChest().clear();
 				p.getInventory().clear();
-				giveLeatherArmor(p, info.color);
-				p.getInventory().addItem(new ItemStack(Material.WOOD_SWORD));
 			}
 		}
 
@@ -284,7 +288,9 @@ public final class Main extends JavaPlugin implements Listener {
 
 		// if in game phase, mark him as dead
 		} else if (gamephase == 2) {
-			getInfo(sb.getPlayerTeam(p)).playersalive--;
+      if (sb.getPlayerTeam(p) != null) {
+        getInfo(sb.getPlayerTeam(p)).playersalive--;
+      }
 		}
 		updateDisplay();
 	}
@@ -305,19 +311,21 @@ public final class Main extends JavaPlugin implements Listener {
 			p.teleport(spectatespawn);
 			p.setGameMode(GameMode.SPECTATOR);
 			Team t = sb.getPlayerTeam(p);
-			final TeamInfo info = getInfo(t);
 
 			// if he was in a team and team still has bed then bring him back
-			if (t != null && info.hasbed) {
-				info.playersalive++;
-				new BukkitRunnable() {
-					@Override
-					public void run() {
-						p.teleport(info.spawn);
-						p.setGameMode(GameMode.SURVIVAL);
-					}
-				}.runTaskLater(this, 100);
-			}
+			if (t != null) {
+        final TeamInfo info = getInfo(t);
+        if (info.hasbed) {
+  				info.playersalive++;
+  				new BukkitRunnable() {
+  					@Override
+  					public void run() {
+  						p.teleport(info.spawn);
+  						p.setGameMode(GameMode.SURVIVAL);
+  					}
+  				}.runTaskLater(this, 100);
+  			}
+      }
 		}
 	}
 
@@ -424,7 +432,7 @@ public final class Main extends JavaPlugin implements Listener {
 	public void onPlayerMove(PlayerMoveEvent e) {
 		if (gamephase == 2 &&
 			  e.getPlayer().getGameMode() == GameMode.SURVIVAL &&
-			  e.getTo().getY() < 0) {
+			  e.getTo().getY() < 0 && e.getFrom().getY() >= 0) {
 			e.getPlayer().setHealth(0.0);
 			e.setCancelled(true);
 		}
@@ -463,7 +471,12 @@ public final class Main extends JavaPlugin implements Listener {
 
 
 		// bypass respawn screen
+    new BukkitRunnable() {
+      @Override
+      public void run() {
         p.spigot().respawn();
+      }
+    }.runTaskLater(this, 1);
 
 		// if team hasbed, put him back to warzone after 5 sec
 		if (info.hasbed) {
