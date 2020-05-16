@@ -6,17 +6,9 @@ import org.bukkit.Material
 import org.bukkit.enchantments.Enchantment
 import org.bukkit.inventory.ItemFlag
 
-private fun getWool(color: Short) =
-        itemBuilder {
-            material = Material.WOOL
-            damage = color
-            amount = 16
-        }
 
-val endStone = itemBuilder {
-    material = Material.ENDER_STONE
-    amount = 12
-}
+
+/* DEFAULT ITEMS */
 
 val leatherHelmet = itemBuilder {
     material = Material.LEATHER_HELMET
@@ -48,7 +40,78 @@ val woodSword = itemBuilder {
     flag(ItemFlag.HIDE_UNBREAKABLE)
 }
 
-// ARMOR
+
+/* BLOCKS */
+
+private fun getWool(color: Short) =
+    itemBuilder {
+        material = Material.WOOL
+        damage = color
+        amount = 16
+    }
+
+private fun getStainedClay(color: Short) =
+    itemBuilder {
+        material = Material.STAINED_CLAY
+        damage = color
+        amount = 16
+    }
+
+private fun getGlass(Color: Short) =
+    itemBuilder {
+        material = Material.STAINED_GLASS
+        amount = 4
+    }
+
+val endStone = itemBuilder {
+    material = Material.ENDER_STONE
+    amount = 12
+}
+
+val ladder = itemBuilder {
+    material = Material.LADDER
+    amount = 16
+}
+
+val wood = itemBuilder {
+    material = Material.WOOD
+    amount = 16
+}
+
+val obsidian = itemBuilder {
+    material = Material.OBSIDIAN
+    amount = 4
+}
+
+
+/* MELEE */
+
+val stoneSword = itemBuilder {
+    material = Material.STONE_SWORD
+    unbreakable = true
+    flag(ItemFlag.HIDE_UNBREAKABLE)
+}
+
+val ironSword = itemBuilder {
+    material = Material.IRON_SWORD
+    unbreakable = true
+    flag(ItemFlag.HIDE_UNBREAKABLE)
+}
+
+val diamondSword = itemBuilder {
+    material = Material.DIAMOND_SWORD
+    unbreakable = true
+    flag(ItemFlag.HIDE_UNBREAKABLE)
+}
+
+val knockbackStick = itemBuilder {
+    material = Material.STICK
+    displayName = "${RESET}Knockback Stick"
+    enchant(Enchantment.KNOCKBACK, 1)
+}
+
+
+/* ARMOR */
 
 val chainmailLeggings = itemBuilder {
     material = Material.CHAINMAIL_LEGGINGS
@@ -86,61 +149,8 @@ val diamondBoots = itemBuilder {
     flag(ItemFlag.HIDE_UNBREAKABLE)
 }
 
-// MELEE
 
-val stoneSword = itemBuilder {
-    material = Material.STONE_SWORD
-    unbreakable = true
-    flag(ItemFlag.HIDE_UNBREAKABLE)
-}
-
-val ironSword = itemBuilder {
-    material = Material.IRON_SWORD
-    unbreakable = true
-    flag(ItemFlag.HIDE_UNBREAKABLE)
-}
-
-val diamondSword = itemBuilder {
-    material = Material.DIAMOND_SWORD
-    unbreakable = true
-    flag(ItemFlag.HIDE_UNBREAKABLE)
-}
-
-val knockbackStick = itemBuilder {
-    material = Material.BLAZE_ROD
-    displayName = "${RESET}Knockback Stick"
-    enchant(Enchantment.KNOCKBACK, 1)
-}
-
-// RANGED
-
-val arrows = itemBuilder {
-    material = Material.ARROW
-    amount = 8
-}
-
-val bow1 = itemBuilder {
-    material = Material.BOW
-    unbreakable = true
-    flag(ItemFlag.HIDE_UNBREAKABLE)
-}
-
-val bow2 = itemBuilder {
-    material = Material.BOW
-    unbreakable = true
-    flag(ItemFlag.HIDE_UNBREAKABLE)
-    enchant(Enchantment.ARROW_DAMAGE, 1)
-}
-
-val bow3 = itemBuilder {
-    material = Material.BOW
-    unbreakable = true
-    flag(ItemFlag.HIDE_UNBREAKABLE)
-    enchant(Enchantment.ARROW_DAMAGE, 1)
-    enchant(Enchantment.ARROW_KNOCKBACK, 1)
-}
-
-// TOOLS
+/* TOOLS */
 
 val shears = itemBuilder {
     material = Material.SHEARS
@@ -148,7 +158,7 @@ val shears = itemBuilder {
     flag(ItemFlag.HIDE_UNBREAKABLE)
 }
 
-// PICK
+// pickaxes
 
 val woodPick = itemBuilder {
     material = Material.WOOD_PICKAXE
@@ -179,7 +189,7 @@ val diamondPick = itemBuilder {
     enchant(Enchantment.DIG_SPEED, 3)
 }
 
-// AXE
+// axes
 
 val woodAxe = itemBuilder {
     material = Material.WOOD_AXE
@@ -208,6 +218,41 @@ val diamondAxe = itemBuilder {
     flag(ItemFlag.HIDE_UNBREAKABLE)
     enchant(Enchantment.DIG_SPEED, 3)
 }
+
+
+
+/* RANGED */
+
+val arrows = itemBuilder {
+    material = Material.ARROW
+    amount = 8
+}
+
+val bow1 = itemBuilder {
+    material = Material.BOW
+    unbreakable = true
+    flag(ItemFlag.HIDE_UNBREAKABLE)
+}
+
+val bow2 = itemBuilder {
+    material = Material.BOW
+    unbreakable = true
+    flag(ItemFlag.HIDE_UNBREAKABLE)
+    enchant(Enchantment.ARROW_DAMAGE, 1)
+}
+
+val bow3 = itemBuilder {
+    material = Material.BOW
+    unbreakable = true
+    flag(ItemFlag.HIDE_UNBREAKABLE)
+    enchant(Enchantment.ARROW_DAMAGE, 1)
+    enchant(Enchantment.ARROW_KNOCKBACK, 1)
+}
+
+
+/* POTIONS */
+
+
 
 // MISC TODO incomplete
 
